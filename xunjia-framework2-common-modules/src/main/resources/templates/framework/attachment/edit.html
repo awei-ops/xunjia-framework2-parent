@@ -1,0 +1,26 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:bf="http://www.thymeleaf.org">
+	
+
+<div class="table-container">
+	<form id="atta-form" method="post" enctype="multipart/form-data">
+		<input type="hidden" id="atta-code" name="code" />
+		<table class="edit-table">
+			<tr>
+				<th>附件名称：</th>
+				<td>
+					<input class="easyui-textbox" id="atta-title" name="title" data-options="required:true,width:240" />
+				</td>
+			</tr>
+			<tr>
+				<th>描&emsp;&emsp;述：</th>
+				<td>
+					<input class="easyui-textbox" id="atta-desc" name="description" data-options="multiline:true, height:120, width:310" />
+				</td>
+			</tr>
+		</table>
+	</form>
+</div>
+</html>

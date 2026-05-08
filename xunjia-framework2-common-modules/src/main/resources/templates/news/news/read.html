@@ -1,0 +1,48 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org">
+
+<head>
+	<title th:text="${news.news.title + ' - 流行病学调查系统'}"></title>
+	<style>
+		body { width:100%; margin:0; padding: 0; }
+		.container { width:100%; }
+		.news-top { width: 100%; background-color: rgb(248,248,249); height: 80px; padding-top: 40px; }
+		.news-top .title { width: 70%; margin:0 auto; font-weight:bold; font-size:24px; height:40px; line-height: 40px; text-align: center; vertical-align: middle; }
+		.news-top .sub-title{ width: 70%; margin: 0 auto; font-size:16px; text-align: center; line-height: 20px; }
+		.news-info {
+			width: 100%;
+			background-color: rgb(248,248,249);
+			color: #999;
+			font-size: 10px;
+			vertical-align: top;
+			text-align: center;
+			padding-top: 5px;
+			padding-bottom: 15px;
+		}
+		.news-info div { display: inline; }
+		.news-content { margin: 0 auto; width: 55%; }
+	</style>
+</head>
+<body>
+	<!--新闻阅读页-->
+	<div class="container">
+		<!-- 新闻标题 -->
+		<div class="news-top">
+			<div class="sub-title" th:if="${news.news.subTitle} != null and ${news.news.subTitle} != '' and ${news.news.subTitlePos == 1}" th:text="${news.news.subTitle}"></div>
+			<div class="title" th:text="${news.news.title}"></div>
+			<div class="sub-title" th:if="${news.news.subTitle} != null and ${news.news.subTitle} != '' and ${news.news.subTitlePos == 0}" th:text="${news.news.subTitle}"></div>
+		</div>
+
+		<!-- 发布时间 阅读量 -->
+		<div class="news-info">
+			<div th:text="${'发布时间：' + #dates.format(news.news.publishDate, 'yyyy-MM-dd')}"></div>
+			<div th:utext="${'&emsp;&emsp;阅读量：' + news.news.readCount}"></div>
+		</div>
+
+		<!-- 新闻内容 -->
+		<div class="news-content" th:utext="${news.content}"></div>
+	</div>
+
+</body>
+</html>

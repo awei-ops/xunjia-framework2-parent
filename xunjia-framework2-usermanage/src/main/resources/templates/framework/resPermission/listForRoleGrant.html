@@ -1,0 +1,155 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:xunjia="http://www.thymeleaf.org">
+	
+<head>
+	<div th:replace="framework/include/head::head"></div>
+</head>
+
+<body>
+	<div class="easyui-layout" fit="true">
+		<div data-options="region:'west',border:false,title:'组织机构',collapsible:false" style="width:20%;">
+			<div id="org-tree" class="easyui-tree" data-options="
+				url: '/org/getEnableOrgTree',
+				animate: true,
+				onClick: orgClicked
+			"></div>
+		</div>
+		<div data-options="region:'center',border:false,title:'可用角色',collapsible:false" style="width:40%;">
+			<table id="role-list-table"></table>
+		</div>
+		<div data-options="region:'east',border:false,title:'有权菜单',collapsible:false" style="width:40%;">
+			<table id="right-menu-table"></table>
+		</div>
+	</div>
+	
+	<div id="role-grant-datagrid-toolbar" class="datagrid-toolbar">
+		<xunjia:button th:menu-id="${menuId}" perm-code="resourcePermission:roleGrantSave" />
+	</div>
+	<script th:inline="none">
+	$(function(){
+		$("#role-list-table").datagrid({
+			url: '/role/findRoles?enable=1',
+			idField: 'id',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: true,
+			pageSize: 20,
+			rownumbers: true,
+			singleSelect: true,
+			toolbar: "#role-grant-datagrid-toolbar",
+			columns: [[
+				{
+					field: 'id',
+					checkbox: true
+				}, {
+					field: 'name',
+					title: '角色名称',
+					width: 80
+				}
+			]],
+			onClickRow: function(index, data){
+				$("#right-menu-table").datagrid('load', {
+					'ownerId': data.id
+				});
+			}
+		});
+		
+		$("#right-menu-table").datagrid({
+			url: '/resPermission/findRightMenus?ownerType=R',
+			idField: 'id',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: false,
+			rownumbers: false,
+			checkOnSelect: false,
+			columns: [[
+				{
+					field: 'i',
+					title: '序号',
+					width: 10,
+					align: 'center',
+					formatter: function(value, row, index){
+						return index + 1;
+					}
+				}, {
+					field: 'rankName',
+					title: '菜单名称',
+					width: 60
+				}, {
+					field: 'resource',
+					title: '权限码',
+					width: 30,
+					formatter: function(value, row, index){
+						return value.permissionCode;
+					}
+				}, {
+					field: 'subResourceNames',
+					title: '受控资源',
+					width: 60
+				}
+			]]
+		});
+		
+	});
+	
+	function grant(){
+		var selectedRows = $("#role-list-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要授权的角色。", "warning");
+		} else if (selectedRows.length > 1){
+			$.messager.alert("提示信息", "您只能选择一个角色进行操作。", "warning");
+		} else {
+			var grantDialog = $("<div></div>").dialog({
+				title: '授权管理',
+				width: 1100,
+				height: 600,
+				modal: true,
+				cache: false,
+				iconCls: "fa fa-pencil-square-o",
+				href: '/resPermission/toGrantResourceForRole',
+				onClose : function() {
+	                $(this).dialog('destroy');
+	            },
+				buttons: [
+					{ 
+						iconCls: 'fa fa-level-down',
+						text: '授权',
+						handler: function(){
+							submitGrant();
+						}
+					}, { 
+						iconCls: 'fa fa-level-up',
+						text: '回收',
+						handler: function(){
+							recoverGrant();
+						}
+					},
+					{ 
+						text: '关闭', 
+						iconCls: 'fa fa-close', 
+						handler: function() { 
+							grantDialog.dialog('destroy'); 
+						}
+					}
+				]
+			});
+		}
+	}
+
+	function orgClicked(node){
+		var selectedNode = $("#org-tree").tree("getSelected");
+		$("#org-tree").tree("toggle", node.target);
+		$("#role-list-table").datagrid("clearSelections");
+		$("#role-list-table").datagrid('load', {
+			'orgId': selectedNode == null ? '' : selectedNode.id
+		});
+	}
+	</script>
+</body>
+</html>

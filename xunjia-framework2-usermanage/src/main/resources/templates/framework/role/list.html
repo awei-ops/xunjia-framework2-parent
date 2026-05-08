@@ -1,0 +1,299 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:xunjia="http://www.thymeleaf.org">
+	
+<head>
+	<div th:replace="framework/include/head::head"></div>
+</head>
+
+<body>
+	<div class="easyui-layout" fit="true">
+		<div data-options="region:'west',width:210">
+			<div id="org-tree" class="easyui-tree" data-options="
+				url: '/org/getOrgTree',
+				animate: true,
+				onClick: orgClicked
+			"></div>
+		</div>
+		<div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+			<input id="pycode-key" class="easyui-textbox" data-options="width:240,label:'拼音码：' ,labelAlign:'right',labelWidth:80" />
+			<select id="enable-key" class="easyui-combobox" data-options="width:240,panelHeight:'auto',editable:false,label:'用户状态：',labelAlign:'right',labelWidth:70">
+				<option value="-1" selected>全部</option>
+				<option value="1">启用</option>
+				<option value="0">禁用</option>
+			</select>
+			<a href="javascript:" onclick="searchRole();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+		</div>
+		<div data-options="region:'center'">
+			<table id="role-table"></table>
+			<div id="role-datagrid-toolbar" class="datagrid-toolbar">
+				<xunjia:button th:menu-id="${menuId}" perm-code="role:save" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="role:update" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="role:delete" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="role:enable" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="role:disable" />
+			</div>
+		</div>
+	</div>
+
+
+	<script th:inline="none">
+	$(function(){
+		$("#role-table").datagrid({
+			url: '/role/findRoles',
+			idField: 'id',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: true,
+			pageSize: 20,
+			rownumbers: true,
+			toolbar: "#role-datagrid-toolbar",
+			columns: [[
+				{
+					field: 'id',
+					checkbox: true
+				}, {
+					field: 'name',
+					title: '角色名称',
+					width: 80
+				}, {
+					field: 'orderNo',
+					title: '排序号',
+					width: 80
+				}, {
+					field: 'organization',
+					title: '所属组织机构',
+					width: 80,
+					formatter: function(value, row, index){
+						return value == null ? "" : value.name;
+					}
+				}, {
+					field: 'enable',
+					title: '状态',
+					width: 80,
+					formatter: function(value, row, index){
+						return value == 0 ? "禁用" : "启用";
+					}
+				}
+			]]
+		});
+	});
+		
+	function add(){
+		var addDialog = $("<div></div>").dialog({
+			title: '添加角色',
+			width: 630,
+			height: 250,
+			modal: true,
+			iconCls: "fa fa-pencil-square-o",
+			href: '/role/toAdd',
+			onLoad: function(){
+				var selectedNode = $("#org-tree").tree("getSelected");
+				var selectedOrgId = "";
+				if (selectedNode!= null){
+					selectedOrgId = selectedNode.id;
+					var orgParentTree = $("#role-org").combotree("tree");
+					var orgNode = orgParentTree.tree("find", selectedNode.id);
+					if (orgNode != null){
+						$("#role-org").combotree('setValue', orgNode.id);
+					} else {
+						orgParentTree.tree("append", {
+							data: [{ id: selectedNode.id, text: selectedNode.text, state: 'closed' }]
+						});
+						orgNode = orgParentTree.tree("find", selectedNode.id);
+						$("#role-org").combotree('setValue', orgNode);
+						orgParentTree.tree('select',orgNode.target);
+						orgNode.target.style.display='none';
+					}
+				}
+			},
+			onClose : function() {
+                $(this).dialog('destroy');
+            },
+			buttons: [
+				{ 
+					text: '保存', 
+					iconCls: 'fa fa-save', 
+					handler: function(){
+						submitRoleForm("add-role-form", addDialog, "/role/save");
+					} 
+				},
+				{ 
+					text: '关闭', 
+					iconCls: 'fa fa-close', 
+					handler: function() { 
+						addDialog.dialog('destroy'); 
+					}
+				}
+			]
+		});
+	}
+	
+	function edit(){
+		var selectedRows = $("#role-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要编辑的记录。", "warning");
+		} else if (selectedRows.length > 1){
+			$.messager.alert("提示信息", "您只能选择一条记录进行操作。", "warning");
+		} else {
+			var editDialog = $("<div></div>").dialog({
+				title: '修改角色信息',
+				width: 630,
+				height: 250,
+				modal: true,
+				iconCls: "fa fa-pencil-square-o",
+				href: '/role/toEdit',
+				onClose : function() {
+	                $(this).dialog('destroy');
+	            },
+				onLoad: function(){
+					$.ajax({
+						url: '/role/findById',
+						data: { id: selectedRows[0].id },
+						type: 'get',
+						dataType: 'json',
+						success: function(data){
+							$("#role-id").val(data.id);
+							$("#role-name").textbox('setValue', data.name);
+							$("#role-orderNo").numberbox('setValue', data.orderNo);
+							if (data.organization != null){
+								$("#role-org").combotree('setValue', data.organization.id);
+								$("#role-org").combotree('setText', data.organization.name);
+							}
+						}
+					});	
+				},
+				buttons: [
+					{ 
+						text: '保存', 
+						iconCls: 'fa fa-save', 
+						handler: function(){
+							submitRoleForm("edit-role-form", editDialog, "/role/update");
+						} 
+					},
+					{ 
+						text: '关闭', 
+						iconCls: 'fa fa-close', 
+						handler: function(){ 
+							$("#role-table").datagrid("reload");
+							editDialog.dialog('destroy'); 
+						} 
+					}
+				]
+			});
+		}
+	}
+	
+	function dataRemove(){
+		var selectedRows = $("#role-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要编辑的记录。", "warning");
+		} else {
+			$.messager.confirm('删除确认', '您是否确认要删除选中的记录？', function(r){
+				if (r){
+					var ids = new Array();
+					$.each(selectedRows, function(i, n){
+						ids[i] = n.id;
+					});
+					
+					$.ajax({
+						url: '/role/delete',
+						data: { "ids[]": ids },
+						type: 'post',
+						dataType: 'json',
+						success: function(data){
+							if (data.result){
+								$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+								$("#role-table").datagrid("reload");
+								$("#role-table").datagrid("clearSelections");
+							} else {
+								$.messager.alert("提示信息", data.msg, "error");
+							}
+						}
+					});	
+				}
+			});
+		}
+	}
+	
+	function setEnable(){
+		changeEnableState(1);
+	}
+	
+	function setDisable(){
+		changeEnableState(0);
+	}
+	
+	function changeEnableState(state){
+		var stateStr = state == 0 ? "禁用" : "启用";
+		var selectedRows = $("#role-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要"+ stateStr +"的角色。", "warning");
+		} else {
+			$.messager.confirm('操作确认', '您是否确认要'+ stateStr +'选中的角色？', function(r){
+				if (r){
+					var ids = new Array();
+					$.each(selectedRows, function(i, n){
+						ids[i] = n.id;
+					});
+					
+					$.ajax({
+						url: '/role/updateEnableState',
+						data: { "enable": state, "ids[]": ids },
+						type: 'post',
+						dataType: 'json',
+						success: function(data){
+							if (data.result){
+								$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+								$("#role-table").datagrid("reload");
+								$("#role-table").datagrid("clearSelections");
+							} else {
+								$.messager.alert("提示信息", data.msg, "error");
+							}
+						}
+					});	
+				}
+			});
+		}
+	}
+	
+	function submitRoleForm(formId, dialog, url){
+		$("#" + formId).form('submit', {
+			url: url,
+			onSubmit: function(){
+				return $(this).form("validate");
+			},
+			success: function(data){
+				data = $.parseJSON(data);
+				if (data.result){
+					dialog.dialog("destroy");
+					$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+					$("#role-table").datagrid("reload");
+					$("#role-table").datagrid("clearSelections");
+				} else {
+					$.messager.alert("提示信息", data.msg, "error");
+				}
+			}
+		});
+	}
+
+	function orgClicked(node){
+		$("#org-tree").tree("toggle", node.target);
+		$("#role-table").datagrid("clearSelections");
+		searchRole();
+	}
+
+	function searchRole(){
+		var selectedNode = $("#org-tree").tree("getSelected");
+		$("#role-table").datagrid('load', {
+			'pyCode': $("#pycode-key").textbox('getValue'),
+			'enable': $("#enable-key").combobox('getValue'),
+			'orgId': selectedNode == null ? '' : selectedNode.id
+		});
+	}
+	</script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+server:
+  port: 80
+spring:
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    url: jdbc:mariadb://localhost:33060/pes?useUnicode=true&characterEncoding=utf8mb4&SslMode=None&serverTimezone=Asia/Shanghai
+    driver-class-name: org.mariadb.jdbc.Driver
+    username: root
+    password: yjzx@1234567890
+    druid:
+      filters: stat,wall
+      connection-properties: druid.stat.mergeSql=true;druid.stat.slowSqlMills=5000
+  jpa:
+    show-sql: false
+    database-platform: org.hibernate.dialect.MariaDB103Dialect
+    hibernate:
+      #ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+  devtools:
+    restart:
+      enabled: false
+      exclude: static/**,public/**,content/**,templates/**
+
+
+#logging.level.org.activiti.engine.impl.persistence.entity=debug
+
+com:
+  alibaba:
+    druid:
+      servlet:
+        allow: 127.0.0.1
+        deny:
+  xunjia:
+    framework:
+      baseUploadFolder: /opt/web/upload/        #系统上传文件目录
+      baseDownloadFolder: /opt/web/download/    #系统下载文件目录
+      uploadAccessPath: /upload/          #系统上传文件目录的访问路径
+      downloadAccessPath: /download/      #系统下载文件目录的访问路径
+      security:
+        loginFailShowVerifyCode: 3  #账户登录失败几次开始显示验证码
+        loginFailEnableDisable: 5   #账户登录失败几次开始启用冷静期
+        minLength: 6          #密码最小长度。0为不限制
+        pattern: 1,2,4      #密码模式，密码中必须包含哪些内容 1数字 2小写字符 3大写字符 4其他字符，0为不限制
+        defaultPassword: user123456@    #添加和导入用户信息时的默认密码
+        passwordEffectiveDays: 90       #密码有效天数
+        #aesKey: PlatformSecurity  #账户AES加密的Key
+        anonUrls: /unionLoginCallback #不需要登录验证的URL，以,分隔
+      xss:
+        enabled: true
+        excludes:
+        urlPatterns: /*
+a5SyncUrl: 127.0.0.1:8099

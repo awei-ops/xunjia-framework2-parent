@@ -1,0 +1,85 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" xmlns:xunjia="http://www.thymeleaf.org">
+
+<head>
+	<div th:replace="framework/include/head::head"></div>
+</head>
+
+<body>
+	<div class="easyui-layout" fit="true">
+		<div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+			<input id="query-mc-key" class="easyui-textbox"
+				data-options="width:240,label:'名称：' ,labelAlign:'right',labelWidth:90" />
+			<input id="query-znbh-key" class="easyui-textbox"
+				data-options="width:240,label:'站内编号：' ,labelAlign:'right',labelWidth:90" />
+<!--			<input id="query-zch-key" class="easyui-textbox"-->
+<!--				data-options="width:240,label:'资产号：' ,labelAlign:'right',labelWidth:90" />-->
+			<input id="query-ssz-key" class="easyui-textbox"
+				   data-options="width:240,label:'所属站：' ,labelAlign:'right',labelWidth:90" />
+			<a href="javascript:" onclick="searchPageData();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+		</div>
+		<div data-options="region:'center'">
+			<table id="display-data-table"></table>
+		</div>
+	</div>
+
+	<script th:inline="none">
+		$(function () {
+			$("#display-data-table").datagrid({
+				url: '/dmgc_s_scljb/getPageData',
+				fit: true,
+				fitColumns: false,
+				striped: true,
+				loadMsg: '数据加载中，请稍候...',
+				pagination: true,
+				pageSize: 20,
+				rownumbers: true,
+				columns: [[
+					{ "field": "mc", "title": "名称", "width": 110 },
+					{ "field": "sszkmc", "title": "所属站名", "width": 110 },
+					{ "field": "znbh", "title": "站内编号", "width": 110 },
+					{ "field": "blx", "title": "泵类型", "width": 110 },
+					{ "field": "bxh", "title": "泵型号", "width": 110 },
+					{ "field": "tcrq", "title": "投用日期", "width": 110 },
+					{ "field": "sccj", "title": "生产厂家", "width": 110 },
+					{ "field": "edyc", "title": "额定扬程(m)", "width": 110 },
+					{ "field": "edll", "title": "额定流量(M3/h)", "width": 110 },
+					{ "field": "djgl", "title": "电机功率(kW)", "width": 110 },
+					{ "field": "djxh", "title": "电机型号", "width": 110 },
+					{ "field": "djsccj", "title": "电机生产厂家", "width": 110 },
+					{ "field": "djeddl", "title": "电机额定电流(A)", "width": 110 },
+					{ "field": "djglys", "title": "电机功率因数(cosφ)", "width": 110 },
+					{ "field": "djxl", "title": "电机效率(%)", "width": 110 },
+					{ "field": "djbpqbh", "title": "电机变频器编号", "width": 110 },
+					{ "field": "ssdwdm", "title": "所属单位代码", "width": 110 },
+					{ "field": "bz", "title": "备注", "width": 110 },
+					{ "field": "sszkid", "title": "所属站库ID", "width": 110 },
+					{ "field": "sszkbmc", "title": "所属站库表名称", "width": 110 },
+					{ "field": "scrq", "title": "生产日期", "width": 110 },
+					{ "field": "zch", "title": "资产号", "width": 110 },
+					{ "field": "edzs", "title": "额定转速(r/min)", "width": 110 },
+					{ "field": "edgzyl", "title": "额定工作压力(MPa)", "width": 110 },
+					{ "field": "gzjz", "title": "工作介质", "width": 110 },
+					{ "field": "zyjscs", "title": "主要技术参数", "width": 110 },
+					// { "field": "sfbf", "title": "是否报废", "width": 110 },
+					{ "field": "bfrq", "title": "报废日期", "width": 110 },
+					{ "field": "ghrq", "title": "更换日期", "width": 110 },
+					{ "field": "cEventId", "title": "更换前eventId", "width": 110 },
+					{ "field": "zlx", "title": "所属站类型", "width": 110 }
+				]]
+			});
+		});
+
+		function searchPageData() {
+			$("#display-data-table").datagrid('load', {
+				'mc': $("#query-mc-key").textbox('getValue'),
+				'znbh': $("#query-znbh-key").textbox('getValue'),
+				'sszkmc': $("#query-ssz-key").textbox('getValue'),
+			});
+		}
+
+
+	</script>
+</body>
+
+</html>

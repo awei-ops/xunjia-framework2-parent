@@ -1,0 +1,207 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:xunjia="http://www.thymeleaf.org">
+	
+<head>
+	<div th:replace="framework/include/head::head"></div>
+</head>
+
+<body>
+	<div class="easyui-layout" fit="true">
+		<div data-options="region:'west',border:false,title:'组织机构',collapsible:false" style="width:20%;">
+			<div id="org-tree" class="easyui-tree" data-options="
+				url: '/org/getEnableOrgTree',
+				animate: true,
+				onClick: orgClicked
+			"></div>
+		</div>
+		<div data-options="region:'center',border:false,title:'可用角色',collapsible:false" style="width:40%;">
+			<table id="urm-role-list-table"></table>
+		</div>
+		<div data-options="region:'east',border:false,title:'关联用户',collapsible:false" style="width:40%;">
+			<table id="urm-role-user-table"></table>
+		</div>
+	</div>
+	<div id="urm-role-datagrid-toolbar" class="datagrid-toolbar">
+		<xunjia:button th:menu-id="${menuId}" perm-code="urm:manage" />
+	</div>
+	<div id="urm-role-user-table-toolbar" class="datagrid-toolbar">
+		<a class="easyui-linkbutton error" iconCls="fa fa-remove" onclick="removeUsers();">删除</a>
+	</div>
+	<script th:inline="none">
+	var selectedRoleId = 0;
+	$(function(){
+		$("#urm-role-list-table").datagrid({
+			url: '/role/findRoles?enable=1',
+			idField: 'id',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: true,
+			pageSize: 20,
+			rownumbers: true,
+			singleSelect: true,
+			toolbar: "#urm-role-datagrid-toolbar",
+			columns: [[
+				{
+					field: 'id',
+					checkbox: true
+				}, {
+					field: 'name',
+					title: '角色名称',
+					width: 80
+				}
+			]],
+			onClickRow: function(index, data){
+				selectedRoleId = data.id;
+				$("#urm-role-user-table").datagrid('load', {
+					'roleId': data.id
+				});
+			}
+		});
+		
+		$("#urm-role-user-table").datagrid({
+			url: '/userRoleMapping/findUsersOfRole',
+			idField: 'id',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: true,
+			rownumbers: true,
+			checkOnSelect: false,
+			toolbar: "#urm-role-user-table-toolbar",
+			columns: [[
+				{
+					field: 'id',
+					checkbox: true
+				}, {
+					field: '1',
+					title: '员工姓名',
+					width: 60,
+					formatter: function(data, row, index){
+						return row.user.realName;
+					}
+				}, {
+					field: '2',
+					title: '用户名',
+					width: 60,
+					formatter: function(data, row, index){
+						return row.user.username;
+					}
+				}, {
+					field: 'orgName',
+					title: '组织名称',
+					width: 60
+				}
+			]]
+		});
+	});
+	
+	function showRelationship(){
+		var selectedRows = $("#urm-role-list-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要授权的角色。", "warning");
+		} else if (selectedRows.length > 1){
+			$.messager.alert("提示信息", "您只能选择一个角色进行操作。", "warning");
+		} else {
+			var grantDialog = $("<div></div>").dialog({
+				title: '选择用户',
+				width: 1100,
+				height: 600,
+				modal: true,
+				cache: false,
+				iconCls: "fa fa-pencil-square-o",
+				href: '/userRoleMapping/toSelectUser',
+				onClose : function() {
+	                $(this).dialog('destroy');
+	            },
+				buttons: [
+					{ 
+						iconCls: 'fa fa-level-down',
+						text: '提交',
+						handler: function(){
+							var selectedUsers = $("#urm-select-user-table").datagrid("getSelections");
+							if (selectedUsers == null || selectedUsers.length == 0){
+								$.messager.alert("提示信息", "您未选择要任何用户。", "warning");
+							} else {
+								var roleId = selectedRows[0].id;
+								var userIds = new Array();
+								$.each(selectedUsers, function(i, n){
+									userIds[i] = n.id;
+								});
+								$.ajax({
+									url: '/userRoleMapping/saveForRole',
+									data: { "roleId": roleId, "userIds": userIds },
+									type: 'post',
+									dataType: 'json',
+									success: function(data){
+										if (data.result){
+											$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+											$("#urm-role-user-table").datagrid("reload");
+											$("#urm-role-user-table").datagrid("clearSelections");
+										} else {
+											$.messager.alert("提示信息", data.msg, "error");
+										}
+									}
+								});
+							}
+						}
+					}, { 
+						text: '关闭', 
+						iconCls: 'fa fa-close', 
+						handler: function() { 
+							grantDialog.dialog('destroy'); 
+						}
+					}
+				]
+			});
+		}
+	}
+
+	function removeUsers(){
+		var selectedRows = $("#urm-role-user-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要删除的用户。", "warning");
+		} else {
+			$.messager.confirm('操作确认', '您是否确认从角色中删除选中的用户？', function(r){
+				if (r){
+					var ids = new Array();
+					$.each(selectedRows, function(i, n){
+						ids[i] = n.user.id;
+					});
+
+					$.ajax({
+						url: '/userRoleMapping/deleteForRole',
+						data: { "roleId": selectedRoleId, "userIds[]": ids },
+						type: 'post',
+						dataType: 'json',
+						success: function(data){
+							if (data.result){
+								$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+								$("#urm-role-user-table").datagrid("reload");
+								$("#urm-role-user-table").datagrid("clearSelections");
+							} else {
+								$.messager.alert("提示信息", data.msg, "error");
+							}
+						}
+					});
+				}
+			});
+		}
+	}
+
+	function orgClicked(node){
+		var selectedNode = $("#org-tree").tree("getSelected");
+		$("#org-tree").tree("toggle", node.target);
+		$("#urm-role-list-table").datagrid("clearSelections");
+		$("#urm-role-list-table").datagrid('load', {
+			'orgId': selectedNode == null ? '' : selectedNode.id
+		});
+	}
+	
+	</script>
+</body>
+</html>

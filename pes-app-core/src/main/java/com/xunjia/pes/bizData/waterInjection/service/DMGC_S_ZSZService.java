@@ -1,0 +1,75 @@
+package com.xunjia.pes.bizData.waterInjection.service;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.github.pagehelper.PageInfo;
+import com.github.pagehelper.page.PageMethod;
+import com.xunjia.framework.common.vo.PageVO;
+import com.xunjia.framework.utils.StringUtils;
+import com.xunjia.pes.bizData.waterInjection.entity.DMGC_S_ZSZ;
+import com.xunjia.pes.bizData.waterInjection.mapper.DMGC_S_ZSZMapper;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.text.Collator;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
+import java.util.stream.Collectors;
+
+@Service
+@Transactional
+@Slf4j
+public class DMGC_S_ZSZService {
+
+    @Autowired
+    private DMGC_S_ZSZMapper mapper;
+
+    List<DMGC_S_ZSZ> getByEventIds(List<String> eventIds){
+        List<DMGC_S_ZSZ> dataList = mapper.selectList(new LambdaQueryWrapper<DMGC_S_ZSZ>()
+                .in(DMGC_S_ZSZ::getEventId, eventIds));
+        return dataList;
+    }
+
+    public PageVO<DMGC_S_ZSZ> getPageData(DMGC_S_ZSZ example, int page, int size){
+        PageVO<DMGC_S_ZSZ> pageVO = null;
+        try {
+            PageMethod.startPage(page, size);
+            List<DMGC_S_ZSZ> dataList = mapper.selectList(this.buildQueryWrapper(example));
+            PageInfo<DMGC_S_ZSZ> pageInfo = PageInfo.of(dataList);
+            pageVO = new PageVO<>(pageInfo.getTotal(), dataList);
+        } catch (Exception e){
+            log.error(e.getMessage(), page, size);
+            pageVO = new PageVO<>();
+        }
+        return pageVO;
+    }
+
+    public List<DMGC_S_ZSZ> getAll(){
+        DMGC_S_ZSZ example = new DMGC_S_ZSZ();
+        List<DMGC_S_ZSZ> dataList = mapper.selectList(this.buildQueryWrapper(example));
+        return dataList;
+    }
+
+    private QueryWrapper<DMGC_S_ZSZ> buildQueryWrapper(DMGC_S_ZSZ example){
+        QueryWrapper<DMGC_S_ZSZ> queryWrapper = new QueryWrapper<>();
+        if (!StringUtils.isEmpty(example.getMc())){
+            queryWrapper.like("mc", "%" + example.getMc() + "%");
+        }
+        if (!StringUtils.isEmpty(example.getCode())){
+            queryWrapper.like("code", "%" + example.getCode() + "%");
+        }
+        queryWrapper.orderBy(true, true, "convert( mc using gbk)");
+        return queryWrapper;
+    }
+
+    public List<String> getZYQNameList(List<String>  zidList){
+        LambdaQueryWrapper<DMGC_S_ZSZ> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.in(DMGC_S_ZSZ::getEventId,zidList);
+        List<DMGC_S_ZSZ> temp = mapper.selectList(queryWrapper);
+        List<String> zyqNameList = temp.stream().filter(c->StringUtils.isNotEmpty(c.getZyqName())).map(c->c.getZyqName()).distinct().collect(Collectors.toList());
+        return zyqNameList;
+    }
+}

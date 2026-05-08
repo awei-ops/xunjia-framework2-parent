@@ -1,0 +1,243 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:xunjia="http://www.thymeleaf.org">
+
+<head>
+    <div th:replace="framework/include/head::head"></div>
+</head>
+
+<body>
+<div class="easyui-layout" fit="true">
+    <div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+        <a>节能措施分类：</a>
+        <select class="easyui-combobox" id="query-measures" data-options="
+                url:'/energySavingMeasures/getEnergySavingMeasuresByTypeCode?typeCode=' + measuresTypeCode,
+                width: 240,
+                textField: 'classificationName',
+                valueField: 'classificationCode',
+                editable: false,
+                loadFilter : function (data) {
+                    if (data) {
+                        data.splice(0, 0, {classificationName: '', classificationCode: ''});　
+                    }
+                    return data;
+                },
+            ">
+        </select>
+        <a href="javascript:" onclick="searchPageData();" class="easyui-linkbutton"
+           iconCls="fa fa-search">查询</a>
+    </div>
+    <div data-options="region:'center'">
+        <table id="display-data-table"></table>
+        <div id="user-operation-bar" class="datagrid-toolbar">
+            <xunjia:button th:menu-id="${menuId}" perm-code="energySavingDetail:save"/>
+            <xunjia:button th:menu-id="${menuId}" perm-code="energySavingDetail:update"/>
+            <xunjia:button th:menu-id="${menuId}" perm-code="energySavingDetail:delete"/>
+        </div>
+    </div>
+</div>
+
+<script th:inline="none">
+    var measuresTypeCode = getUrlParam('measuresTypeCode')
+	$(function(){
+		$("#display-data-table").datagrid({
+			url: '/energySavingDetail/getPageData',
+			idField: 'id',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: true,
+			pageSize: 20,
+			rownumbers: true,
+			singleSelect: 'true',
+			toolbar: "#user-operation-bar",
+			queryParams:{
+			    measuresTypeCode:measuresTypeCode
+			},
+			columns: [[
+				{
+					field: 'id',
+					checkbox: true
+				},
+				{
+					field: 'detail',
+					title: '措施内容',
+					width: 300
+				}, {
+					field: 'orderNo',
+					title: '措施序号',
+					width: 50
+				}
+			]]
+		});
+	});
+
+	function getUrlParam(name) {
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)"); //构造一个含有目标参数的正则表达式对象
+        var r = window.location.search.substr(1).match(reg);  //匹配目标参数
+        if (r != null) return unescape(r[2]); return null; //返回参数值
+    }
+	
+	function add(){
+	    var classificationCode= $("#query-measures").combobox('getValue');
+	    if (classificationCode == null || classificationCode == undefined || classificationCode == "") {
+	        $.messager.alert("提示信息", "请选择节能措施分类。", "warning");
+	        return;
+	    }
+		var addDialog = $("<div></div>").dialog({
+			title: '添加数据',
+			width: 630,
+			height: 360,
+			modal: true,
+			iconCls: "fa fa-pencil-square-o",
+			href: '/energySavingDetail/toAdd',
+			onLoad: function(){
+			    $("#measuresTypeCode-key").val(measuresTypeCode);
+			    $("#classificationCode-key").val(classificationCode);
+			},
+			onClose : function() {
+                $(this).dialog('destroy');
+            },
+			buttons: [
+				{ 
+					text: '保存',
+					iconCls: 'fa fa-save', 
+					handler: function(){
+						submitDataForm("add-form", addDialog, "/energySavingDetail/save");
+					} 
+				},
+				{ 
+					text: '关闭', 
+					iconCls: 'fa fa-close', 
+					handler: function() { 
+						addDialog.dialog('destroy'); 
+					}
+				}
+			]
+		});
+	}
+	
+	function edit(){
+		var selectedRows = $("#display-data-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要编辑的记录。", "warning");
+		} else if (selectedRows.length > 1){
+			$.messager.alert("提示信息", "您只能选择一条记录进行操作。", "warning");
+		} else {
+			var editDialog = $("<div></div>").dialog({
+				title: '编辑数据',
+				width: 630,
+				height: 360,
+				modal: true,
+				iconCls: "fa fa-pencil-square-o",
+				href: '/energySavingDetail/toEdit',
+				onClose : function() {
+	                $(this).dialog('destroy');
+	            },
+				onLoad: function(){
+				    $("#device-category").val(queryType);
+					$.ajax({
+						url: '/energySavingDetail/findById',
+						data: { id: selectedRows[0].id },
+						type: 'get',
+						dataType: 'json',
+						success: function(data){
+							$("#id-key").val(data.id);
+							$("#measuresTypeCode-key").val(data.measuresTypeCode);
+							$("#classificationCode-key").val(data.classificationCode);
+							$("#detail-key").textbox('setValue', data.detail);
+							$("#orderNo-key").numberbox('setValue', data.orderNo);
+						}
+					});	
+				},
+				buttons: [
+					{ 
+						text: '保存', 
+						iconCls: 'fa fa-save', 
+						handler: function(){
+							submitDataForm("edit-form", editDialog, "/energySavingDetail/update");
+						} 
+					},
+					{ 
+						text: '关闭', 
+						iconCls: 'fa fa-close', 
+						handler: function(){ 
+							editDialog.dialog('destroy'); 
+						} 
+					}
+				]
+			});
+		}
+	}
+	
+	function dataRemove(){
+		var selectedRows = $("#display-data-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要删除的记录。", "warning");
+		} else {
+			$.messager.confirm('删除确认', '您是否确认要删除选中的记录？', function(r){
+				if (r){
+					var ids = new Array();
+					$.each(selectedRows, function(i, n){
+						ids[i] = n.id;
+					});
+					
+					$.ajax({
+						url: '/energySavingDetail/delete',
+						data: { "ids[]": ids },
+						type: 'post',
+						dataType: 'json',
+						success: function(data){
+							if (data.result){
+								$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+								$("#display-data-table").datagrid("reload");
+								$("#display-data-table").datagrid("clearSelections");
+							} else {
+								$.messager.alert("提示信息", data.msg, "error");
+							}
+						}
+					});	
+				}
+			});
+		}
+	}
+	
+	function submitDataForm(formId, dialog, url){
+	    var validate;
+		$("#" + formId).form('submit', {
+			url: url,
+			onSubmit: function(){
+			    validate = $(this).form("validate");
+                return validate;
+			},
+			success: function(data){
+			    if(validate){
+                    data = $.parseJSON(data);
+                    if (data.result){
+                        dialog.dialog("destroy");
+                        $.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+                        $("#display-data-table").datagrid("reload");
+                        $("#display-data-table").datagrid("clearSelections");
+                    } else {
+                        $.messager.alert("提示信息", data.msg, "error");
+                    }
+				}
+			}
+		});
+	}
+	
+	function searchPageData(){
+		$("#display-data-table").datagrid('load', {
+		    'measuresTypeCode':measuresTypeCode,
+			'classificationCode': $("#query-measures").combobox('getValue'),
+		});
+	}
+
+
+
+
+</script>
+</body>
+</html>

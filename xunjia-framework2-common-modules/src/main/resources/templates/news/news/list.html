@@ -1,0 +1,196 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:xunjia="http://www.thymeleaf.org">
+	
+<head>
+	<div th:replace="framework/include/head::head"></div>
+</head>
+	
+<body>
+	<input type="hidden" id="menuId" th:value="${menuId}" />
+	<input type="hidden" id="theme" th:value="${theme}" />
+	<div class="easyui-layout" fit="true">
+		<div data-options="region:'west',width:210">
+			<div id="type-tree" class="easyui-tree" data-options="
+				url: '/newsType/getTypeTree',
+				animate: true,
+				onClick: typeClicked
+			"></div>
+		</div>
+		<div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+			<input id="news-title-key" class="easyui-textbox" data-options="width:240,label:'栏目名称：',labelAlign:'right',labelWidth:80" />
+			<input id="news-start-date-key" class="easyui-datebox" data-options="width:240,label:'起始日期：',labelAlign:'right',labelWidth:80" />
+			<input id="news-end-date-key" class="easyui-datebox" data-options="width:240,label:'截止日期：',labelAlign:'right',labelWidth:80" />
+			<a href="javascript:" onclick="searchNewsType();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+		</div>
+		<div data-options="region:'center'">
+			<table id="news-table"></table>
+			<div id="newsDgTools" class="datagrid-toolbar">
+				<xunjia:button th:menu-id="${menuId}" perm-code="news:save" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="news:update" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="news:delete" />
+			</div>
+		</div>
+	</div>
+
+	
+	<script th:inline="none">
+	$(function(){
+		$("#news-table").datagrid({
+			url: '/news/findNews',
+			idField: 'id',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: true,                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+			pageSize: 20,
+			rownumbers: true,
+			toolbar: "#newsDgTools",
+			columns: [[
+				{
+					field: 'id',
+					checkbox: true
+				},
+				{                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
+					field: 'title',
+					title: '新闻',
+					width: 160
+				}, {
+					field: 'publishDate',
+					title: '上传日期',
+					width: 80
+				}, {
+					field: 'author',
+					title: '上传人',
+					width: 70
+				}, {
+					field: 'auditState',
+					title: '审核状态',
+					width: 60,
+					formatter: function(value, row, index){
+						return value == 0 ? "未审核" : "已发布"; 
+					}
+				}, {
+					field: 'readCount',
+					title: '阅读量',
+					width: 60
+				}
+			]]
+		});
+	});
+	
+	var editDialog = null;
+	function edit(){
+		var selectedRows = $("#news-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要编辑的记录。", "warning");
+		} else if (selectedRows.length > 1){
+			$.messager.alert("提示信息", "您只能选择一条记录进行操作。", "warning");
+		} else {
+			var menuId = $("#menuId").val();
+			var theme = $("#theme").val();
+			var content = "<iframe src='/news/toEdit?id="+ selectedRows[0].id +"&menuId="+ menuId +"&theme="+ theme +"' width='100%' height='100%' frameborder='0' scrolling='auto'></iframe>";
+			editDialog = $("<div></div>").dialog({
+				title: '编辑新闻',
+				width: '100%',
+				height: '100%',
+				modal: true,
+				iconCls: "fa fa-pencil-square-o",
+				content: content,
+				onClose : function() {
+	                $(this).dialog('destroy');
+	            }
+			});
+		}
+	}
+	
+	function editSuccess(msg){
+		$.messager.show({ title:'提示信息', msg: msg, timeout:5000, showType: 'show' });
+		editDialog.dialog("destroy");
+		$("#news-table").datagrid("reload");
+	}
+	
+	function dataRemove(){
+		var selectedRows = $("#news-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要删除的记录。", "warning");
+		} else {
+			$.messager.confirm('删除确认', '您是否确认要删除选中的记录？', function(r){
+				if (r){
+					var ids = new Array();
+					$.each(selectedRows, function(i, n){
+						ids[i] = n.id;
+					});
+					
+					$.ajax({
+						url: '/news/delete',
+						data: { "ids[]": ids },
+						type: 'post',
+						dataType: 'json',
+						success: function(data){
+							if (data.result){
+								$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+								$("#news-table").datagrid("reload");
+								$("#news-table").datagrid("clearSelections");
+							} else {
+								$.messager.alert("提示信息", data.msg, "error");
+							}
+						}
+					});	
+				}
+			});
+		}
+	}
+	
+	function audit(){
+		var selectedRows = $("#news-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要删除的记录。", "warning");
+		} else {
+			$.messager.confirm('删除确认', '您是否确认要删除选中的记录？', function(r){
+				if (r){
+					var ids = new Array();
+					$.each(selectedRows, function(i, n){
+						ids[i] = n.id;
+					});
+					
+					$.ajax({
+						url: '/news/audit',
+						data: { "ids[]": ids },
+						type: 'post',
+						dataType: 'json',
+						success: function(data){
+							if (data.result){
+								$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+								$("#news-table").datagrid("reload");
+								$("#news-table").datagrid("clearSelections");
+							} else {
+								$.messager.alert("提示信息", data.msg, "error");
+							}
+						}
+					});	
+				}
+			});
+		}
+	}
+	
+	function typeClicked(node){
+		$("#type-tree").tree("toggle", node.target);
+		$("#news-table").datagrid("clearSelections");
+		searchNews();
+	}
+	
+	function searchNews(){
+		var selectedNode = $("#type-tree").tree("getSelected"); 
+		$("#news-table").datagrid('load', {
+			'title': $("#news-title-key").textbox('getValue'),
+			'startDate': $("#news-start-date-key").datebox('getValue'),
+			'endDate': $("#news-end-date-key").datebox('getValue'),
+			'typeId': selectedNode == null ? '' : selectedNode.id
+		});
+	}
+	</script>
+</body>
+</html>

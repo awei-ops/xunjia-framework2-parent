@@ -1,0 +1,263 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" xmlns:xunjia="http://www.thymeleaf.org">
+
+<head>
+  <div th:replace="framework/include/head::head"></div>
+  <script type="text/javascript" src="/global/js/echarts/echarts.min.js"></script>
+</head>
+
+<body>
+  <div class="easyui-layout" fit="true">
+    <div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+      <a>站名称：</a>
+      <select class="easyui-combobox" id="query-stations" data-options="
+                url:'/dmgc_s_zsz/getAll',
+                width: 150,
+                textField: 'mc',
+                valueField: 'eventId',
+                editable: true,
+                loadFilter : function (data) {
+                  if (data) {
+                      data.splice(0, 0, {mc: '全部', eventId: ''});
+                  }
+                  return data;
+              },
+            ">
+      </select>
+      <input id="query-startDate-key" class="easyui-datebox" editable="false" value="true"
+        data-options="width:240,label:'生产日期：' ,labelAlign:'right',labelWidth:90" />
+      <!-- <input id="query-endDate-key" class="easyui-datebox" editable="false" value="true"
+        data-options="width:240,label:'结束时间：' ,labelAlign:'right',labelWidth:90" /> -->
+      <a href="javascript:" onclick="searchPageData();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+      <a href="javascript:" onclick="importData();" class="easyui-linkbutton" iconCls="fa fa-cloud-upload">同步数据</a>
+      <a href="javascript:" onclick="auditData();" class="easyui-linkbutton" iconCls="fa fa-search">审核并考核</a>
+      <a href="javascript:" onclick="exportData();" class="easyui-linkbutton" iconCls="fa fa-cloud-download">导出</a>
+    </div>
+    <div data-options="region:'center'">
+      <table id="display-data-table"></table>
+      <!-- <div id="user-operation-bar" class="datagrid-toolbar">
+        <a>统计周期：</a>
+        <input type="radio" checked="checked" name="cycle" value="年">年
+        <input type="radio" name="cycle" value="月">月
+        <a href="javascript:" onclick="chart('zhydl');" class="easyui-linkbutton" iconCls="fa fa-line-chart">综合耗电量曲线</a>
+        <a href="javascript:" onclick="chart('zhdh');" class="easyui-linkbutton" iconCls="fa fa-line-chart">综合单耗曲线</a>
+        <xunjia:button th:menu-id="${menuId}" perm-code="dmgc_s_d_zszrsj:export" />
+      </div> -->
+    </div>
+  </div>
+
+  <script th:inline="none">
+    $(function () {
+      $("#display-data-table").datagrid({
+        url: '/dmgc_s_d_zszrsj/getPageData',
+        fit: true,
+        fitColumns: true,
+        striped: true,
+        loadMsg: '数据加载中，请稍候...',
+        pagination: true,
+        pageSize: 20,
+        rownumbers: true,
+        onClickCell: onClickCell,
+        onAfterEdit: onAfterEdit,
+        queryParams: {
+          'startDate': $("#query-startDate-key").datebox('getValue'),
+          'endDate': $("#query-startDate-key").datebox('getValue'),
+        },
+        toolbar: "#user-operation-bar",
+        columns: [[
+          { "field": "rq", "title": "日期", "width": 110 },
+          { "field": "zmc", "title": "站名称", "width": 110 },
+          {
+            "field": "zhdh", "title": "综合单耗(kWh/m3)", "width": 110, styler: flagColor,
+            editor: {
+              type: 'numberbox',
+              options: { precision: 2 }
+            }
+          },
+          { "field": "zhydl", "title": "综合用电量(kWh)", "width": 110 },
+          // { "field": "ssdwdm", "title": "所属单位代码", "width": 110 },
+          // { "field": "allowDelete", "title": "是否允许删除", "width": 110 }
+        ]]
+      });
+    });
+
+    function chart(type) {
+      var startDate = $("#query-startDate-key").datebox('getValue');
+      var endDate = $("#query-startDate-key").datebox('getValue');
+      var cycle = $('input:radio:checked').val();
+      var type = type;
+      if (startDate == "" || endDate == "") {
+        $.messager.alert("提示信息", "您未选择要统计的范围。", "warning");
+      } else {
+        var editDialog = $("<div></div>").dialog({
+          title: '统计信息',
+          width: 1400,
+          height: 550,
+          modal: true,
+          iconCls: "fa fa-pencil-square-o",
+          href: '/dmgc_s_d_zszrsj/toChart',
+          onClose: function () {
+            $(this).dialog('destroy');
+          },
+          onLoad: function () {
+            var myChart = echarts.init(document.getElementById('chart'));
+            $.ajax({
+              url: '/dmgc_s_d_zszrsj/getStatistics',
+              data: {
+                'startDate': startDate,
+                'endDate': endDate,
+                'cycle': cycle,
+                'type': type
+              },
+              type: 'get',
+              dataType: 'json',
+              success: function (response) {
+                var option = {
+                  title: {
+                    x: 'center',
+                    text: response.title
+                  },
+                  tooltip: {
+                    trigger: 'axis'
+                  },
+                  legend: {
+                    orient: 'vertical',
+                    x: 'right',
+                    y: 'center',
+                    data: response.legend
+                  },
+                  grid: {
+                    left: '3%',
+                    right: '10%',
+                    bottom: '3%',
+                    containLabel: true
+                  },
+                  xAxis: {
+                    type: 'category',
+                    boundaryGap: false,
+                    data: response.xaxis
+                  },
+                  yAxis: {
+                    type: 'value'
+                  },
+                  series: response.series
+                }
+                myChart.setOption(option);
+              }
+            });
+          },
+          buttons: [
+            {
+              text: '关闭',
+              iconCls: 'fa fa-close',
+              handler: function () {
+                editDialog.dialog('destroy');
+              }
+            }
+          ]
+        });
+      }
+    }
+
+    function searchPageData() {
+      $("#display-data-table").datagrid('load', {
+        'zmc': $('#query-stations').combobox('getText') === '全部' ? '' : $('#query-stations').combobox('getText'),
+        'startDate': $("#query-startDate-key").datebox('getValue'),
+        'endDate': $("#query-startDate-key").datebox('getValue'),
+      });
+    }
+
+    function exportData() {
+      window.open("/dmgc_s_d_zszrsj/exportData?startDate=" +
+        $("#query-startDate-key").datebox('getValue') +
+        "&endDate=" +
+        $("#query-startDate-key").datebox('getValue'));
+    }
+
+    function flagColor(val, row, index) {
+      return 'background:#FFFACD';
+    }
+
+    var editIndex = undefined;
+    function endEditing() {//该方法用于关闭上一个焦点的editing状态
+      if (editIndex == undefined) {
+        return true
+      }
+      if ($('#display-data-table').datagrid('validateRow', editIndex)) {
+        $('#display-data-table').datagrid('endEdit', editIndex);
+        editIndex = undefined;
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    function onClickCell(index, field, value) {
+      if (endEditing()) {
+        if (field == "zhdh") {
+          var row = $('#display-data-table').datagrid('getRows')[index];
+          $(this).datagrid('beginEdit', index);
+          var ed = $(this).datagrid('getEditor', { index: index, field: field });
+          $(ed.target).focus();
+        }
+        editIndex = index;
+      }
+    }
+
+    //单元格失去焦点执行的方法
+    function onAfterEdit(index, row, changes) {
+      var updated = $('#display-data-table').datagrid('getChanges', 'updated');
+      if (updated.length < 1) {
+        editRow = undefined;
+        $('#display-data-table').datagrid('unselectAll');
+        return;
+      } else {
+        submitData(index, row, changes);
+      }
+    }
+
+    //提交数据
+    function submitData(index, row, changes) {
+      $.ajax({
+        type: "get",
+        async: false,
+        url: "/dmgc_s_d_zszrsj/saveData",
+        data: {
+          id: row.eventId,
+          zhdh: row.zhdh,
+        }
+      })
+    }
+
+    function auditData() {
+      $.ajax({
+        type: "get",
+        async: false,
+        url: "/dmgc_s_d_zszrsj/auditData",
+        data: {
+          "rq": $('#query-startDate-key').datebox('getValue')
+        },
+        success: function (response) {
+          $('#display-data-table').datagrid('reload');
+        }
+      })
+    }
+
+    function importData() {
+      $.ajax({
+        type: "get",
+        url: "http://11.11.111.226:8099/dmgc_s_d_zszrsj_sync/getA5_Data",
+        data: {
+          startTime: $('#query-startDate-key').datebox('getValue'),
+          endTime: $('#query-startDate-key').datebox('getValue'),
+        },
+        success: function (response) {
+          searchPageData();
+        }
+      })
+    }
+
+  </script>
+</body>
+
+</html>

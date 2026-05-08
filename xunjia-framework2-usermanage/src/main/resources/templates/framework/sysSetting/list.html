@@ -1,0 +1,183 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:xunjia="http://www.thymeleaf.org">
+	
+<head>
+	<div th:replace="framework/include/head::head"></div>
+</head>
+
+<body>
+	<table id="sys-setting-table"></table>
+	<div id="sys-setting-datagrid-toolbar" class="datagrid-toolbar">
+		<xunjia:button th:menu-id="${menuId}" perm-code="sysSetting:add" />
+		<xunjia:button th:menu-id="${menuId}" perm-code="sysSetting:delete" />
+		<xunjia:button th:menu-id="${menuId}" perm-code="sysSetting:save" />
+	</div>
+	<script th:inline="none">
+	var sysSettingTable;
+	var edittingRowIndex = -1;
+	var newRowIndex = -1;
+	$(function(){
+		sysSettingTable = $("#sys-setting-table").datagrid({
+			url: '/sysSetting/findSysSettings',
+			idField: 'id',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: false,
+			rownumbers: true,
+			toolbar: "#sys-setting-datagrid-toolbar",
+			columns: [[
+				{
+					field: 'id',
+					checkbox: true
+				}, {
+					field: 'key',
+					title: '配置名称',
+					width: 80,
+					editor: {
+						type: "text",
+						options: { required: true }
+					}
+				}, {
+					field: 'value',
+					title: '值',
+					width: 80,
+					editor: {
+						type: "text",
+						options: { required: true }
+					}
+				}
+			]],
+			onDblClickRow: beginEdit,
+			onClickRow: clickRow
+		});
+	});
+	
+	function beginEdit(rowIndex, rowData){
+		endEdit();
+		
+		sysSettingTable.datagrid('beginEdit', rowIndex);
+		edittingRowIndex = rowIndex;
+	}
+	
+	function endEdit(){
+		if (edittingRowIndex != -1){
+			sysSettingTable.datagrid('endEdit', edittingRowIndex);
+			edittingRowIndex = -1;
+		}
+	}
+	
+	function clickRow(rowIndex, rowData){
+		endEdit();
+	}
+		
+	function add(){
+		endEdit();
+		
+		sysSettingTable.datagrid('appendRow', {
+			id: newRowIndex,
+			key: '',
+			value: ''
+		});
+		var newRowIndex = sysSettingTable.datagrid('getRowIndex', newRowIndex);
+		sysSettingTable.datagrid('beginEdit', newRowIndex);
+		edittingRowIndex = newRowIndex;
+		newRowIndex--;
+	}
+	
+	function dataRemove(){
+		var selectedRows = sysSettingTable.datagrid("getChecked");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要删除的记录。", "warning");
+		} else {
+			$.messager.confirm('删除确认', '您是否确认要删除选中的记录？', function(r){
+				if (r){
+					endEdit();
+					
+					var ids = new Array();
+					$.each(selectedRows, function(i, n){
+						if (n.id > 0){
+							ids[i] = n.id;
+						}
+					});
+					
+					if (ids.length > 0){
+						$.ajax({
+							url: '/sysSetting/delete',
+							data: { "ids[]": ids },
+							type: 'post',
+							dataType: 'json',
+							success: function(data){
+								if (data.result){
+									$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+									for (var i = selectedRows.length - 1; i >= 0; i--){
+										var rowIndex = sysSettingTable.datagrid("getRowIndex", selectedRows[i]); 
+										sysSettingTable.datagrid("deleteRow", rowIndex);
+									}
+									sysSettingTable.datagrid("clearSelections");
+								} else {
+									$.messager.alert("提示信息", data.msg, "error");
+								}
+							}
+						});	
+					} else {
+						for (var i = selectedRows.length - 1; i >= 0; i--){
+							var rowIndex = sysSettingTable.datagrid("getRowIndex", selectedRows[i]); 
+							sysSettingTable.datagrid("deleteRow", rowIndex);
+						}
+					}
+				}
+			});
+		}
+	}
+	
+	function submitData(){
+		var rows = sysSettingTable.datagrid("getRows");
+		if (rows == null || rows.length == 0){
+			$.messager.alert("提示信息", "表格中没有任何配置信息。", "error");
+			return;
+		}
+		
+		$.messager.confirm('操作确认', '您是否确认要提交全部记录？', function(r){
+			if (r){
+
+				endEdit();
+				
+				var keys = new Array();
+				var values = new Array();
+				for(var i = 0; i < rows.length; i++){
+					keys[i] = rows[i].key;
+					values[i] = rows[i].value;
+					if (keys[i] == ""){
+						$.messager.alert("提示信息", "您有未填写的配置名称。", "error");
+						return;
+					}
+				}
+				
+				$.ajax({
+					url: '/sysSetting/save',
+					data: {
+						"keys[]": keys,
+						"values[]": values
+					},
+					type: 'post',
+					dataType: 'json',
+					success: function(data){
+						if (data.result){
+							$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+							sysSettingTable.datagrid("reload");
+							sysSettingTable.datagrid("clearSelections");
+						} else {
+							$.messager.alert("提示信息", data.msg, "error");
+						}
+					}
+				});
+			}
+		});
+	}
+	</script>
+</body>
+</html>

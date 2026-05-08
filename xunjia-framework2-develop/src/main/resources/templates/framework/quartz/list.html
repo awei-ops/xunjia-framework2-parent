@@ -1,0 +1,253 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:xunjia="http://www.thymeleaf.org">
+	
+<head>
+	<div th:replace="framework/include/head::head"></div>
+</head>
+
+<body>
+	<div class="easyui-layout" fit="true">
+		<div data-options="region:'center'">
+			<table id="quartz-job-table"></table>
+			<div id="quartz-job-table-tools" class="datagrid-toolbar">
+				<xunjia:button th:menu-id="${menuId}" perm-code="quartzJob:save" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="quartzJob:update" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="quartzJob:start" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="quartzJob:pause" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="quartzJob:delete" />
+			</div>
+		</div>
+	</div>
+	
+	<script th:inline="none">
+	$(function(){
+		$("#quartz-job-table").datagrid({
+			url: '/quartzJob/findQuartzJobs',
+			idField: 'id',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: true,
+			pageSize: 20,
+			rownumbers: true,
+			singleSelect: true,
+			toolbar: "#quartz-job-table-tools",
+			columns: [[
+				{
+					field: 'id',
+					checkbox: true
+				}, {
+					field: 'jobName',
+					title: '任务名称',
+					width: 80
+				}, {
+					field: 'jobGroup',
+					title: '任务分组',
+					width: 80
+				}, {
+					field: 'createTime',
+					title: '创建日期',
+					width: 80
+				}, {
+					field: 'cronExpression',
+					title: '定时规则',
+					width: 100
+				}, {
+					field: 'jobClassName',
+					title: '任务调用类',
+					width: 100
+				}, {
+					field: 'runtimeState',
+					title: '任务状态',
+					width: 80
+				}
+			]]
+		});
+		
+	});
+		
+	function add(){
+		var addDialog = $("<div></div>").dialog({
+			title: '添加定时任务',
+			width: 630,
+			height: 300,
+			modal: true,
+			iconCls: "fa fa-pencil-square-o",
+			href: '/quartzJob/toAdd',
+			onClose : function() {
+                $(this).dialog('destroy');
+            },
+			buttons: [
+				{ 
+					text: '保存',
+					iconCls: 'fa fa-save', 
+					handler: function(){
+						submitQuartzJobForm("add-quartz-job-form", addDialog, "/quartzJob/save");
+					} 
+				},
+				{ 
+					text: '关闭', 
+					iconCls: 'fa fa-close', 
+					handler: function() { 
+						addDialog.dialog('destroy'); 
+					}
+				}
+			]
+		});
+	}
+	
+	function edit(){
+		var selectedRows = $("#quartz-job-table").datagrid("getChecked");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要编辑的记录。", "warning");
+		} else if (selectedRows.length > 1){
+			$.messager.alert("提示信息", "您只能选择一条记录进行操作。", "warning");
+		} else {
+			var editDialog = $("<div></div>").dialog({
+				title: '编辑定时任务',
+				width: 630,
+				height: 300,
+				modal: true,
+				iconCls: "fa fa-pencil-square-o",
+				href: '/quartzJob/toEdit',
+				onClose : function() {
+	                $(this).dialog('destroy');
+	            },
+				onLoad: function(){
+					$.ajax({
+						url: '/quartzJob/findById',
+						data: { id: selectedRows[0].id },
+						type: 'get',
+						dataType: 'json',
+						success: function(data){
+							$("#quartz-job-id").val(data.id);
+							$("#quartz-job-name").textbox('setValue', data.jobName);
+							$("#quartz-job-group").textbox('setValue', data.jobGroup);
+							$("#quartz-job-cron-expression").textbox('setValue', data.cronExpression);
+							$("#quartz-job-class-name").textbox('setValue', data.jobClassName);
+						}
+					});
+				},
+				buttons: [
+					{ 
+						text: '保存', 
+						iconCls: 'fa fa-save', 
+						handler: function(){
+							submitQuartzJobForm("edit-quartz-job-form", editDialog, "/quartzJob/update");
+						} 
+					},
+					{ 
+						text: '关闭', 
+						iconCls: 'fa fa-close', 
+						handler: function(){ 
+							editDialog.dialog('destroy'); 
+						} 
+					}
+				]
+			});
+		}
+	}
+	
+	function dataRemove(){
+		var selectedRows = $("#quartz-job-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要删除的记录。", "warning");
+		} else {
+			$.messager.confirm('删除确认', '您是否确认要删除选中的记录？', function(r){
+				if (r){
+					var ids = new Array();
+					$.each(selectedRows, function(i, n){
+						ids[i] = n.id;
+					});
+					
+					$.ajax({
+						url: '/quartzJob/delete',
+						data: { "ids[]": ids },
+						type: 'post',
+						dataType: 'json',
+						success: function(data){
+							if (data.result){
+								$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+								$("#quartz-job-table").datagrid("reload");
+								$("#quartz-job-table").datagrid("clearSelections");
+							} else {
+								$.messager.alert("提示信息", data.msg, "error");
+							}
+						}
+					});	
+				}
+			});
+		}
+	}
+	
+	function submitQuartzJobForm(formId, dialog, url){
+		$("#" + formId).form('submit', {
+			url: url,
+			onSubmit: function(){
+				return $(this).form("validate");
+			},
+			success: function(data){
+				data = $.parseJSON(data);
+				if (data.result){
+					dialog.dialog("destroy");
+					$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+					$("#quartz-job-table").datagrid("reload");
+					$("#quartz-job-table").datagrid("clearSelections");
+				} else {
+					$.messager.alert("提示信息", data.msg, "error");
+				}
+			}
+		});
+	}
+	
+	function start(){
+		var selectedRows = $("#quartz-job-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要启动的任务。", "warning");
+		} else if (selectedRows.length > 1){
+			$.messager.alert("提示信息", "您只能选择一条记录进行操作。", "warning");
+		} else if (selectedRows[0].runtimeState == "运行中"
+			|| selectedRows[0].runtimeState == "阻塞") {
+			$.messager.alert("提示信息", "您选中的任务正在运行。", "warning");
+		} else {
+			$.post("/quartzJob/start?id=" + selectedRows[0].id, function(data){
+				if (data.result){
+					$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+					$("#quartz-job-table").datagrid("reload");
+					$("#quartz-job-table").datagrid("clearSelections");
+				} else {
+					$.messager.alert("提示信息", data.msg, "error");
+				}
+			});
+		}
+	}
+	
+	function pause(){
+		var selectedRows = $("#quartz-job-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要启动的任务。", "warning");
+		} else if (selectedRows.length > 1){
+			$.messager.alert("提示信息", "您只能选择一条记录进行操作。", "warning");
+		} else if (selectedRows[0].runtimeState == "未执行"
+			|| selectedRows[0].runtimeState == "完成"
+			|| selectedRows[0].runtimeState == "暂停"
+			|| selectedRows[0].runtimeState == "异常") {
+			$.messager.alert("提示信息", "您选择的任务已经停止运行。", "warning");
+		} else {
+			$.post("/quartzJob/pause?id=" + selectedRows[0].id, function(data){
+				if (data.result){
+					$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+					$("#quartz-job-table").datagrid("reload");
+					$("#quartz-job-table").datagrid("clearSelections");
+				} else {
+					$.messager.alert("提示信息", data.msg, "error");
+				}
+			});
+		}
+	}
+	</script>
+</body>
+</html>

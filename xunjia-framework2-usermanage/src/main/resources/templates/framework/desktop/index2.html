@@ -1,0 +1,246 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${sysSettings.siteName}">大庆金桥软件开发平台</title>
+
+    <link rel="stylesheet" type="text/css" href="/global/css/global.css">
+    <link rel="stylesheet" type="text/css" th:href="@{'/global/js/super/'+ ${sysSettings.theme} +'.css'}" id="themeCss">
+    <link rel="stylesheet" type="text/css" href="/global/css/font-awesome-4.7.0/css/font-awesome.min.css">
+    <link type="text/css" rel="stylesheet" href="/page/index/ai.css" />
+
+    <!--
+    <script type="text/javascript" src="/global/js/jquery.min.js"></script>
+    <script type="text/javascript" src="/global/js/easyui/extensions/jquery.portal.js"></script>
+    -->
+
+    <script type="text/javascript" src="/page/index/jquery-1.10.2.js"></script>
+    <script type="text/javascript" src="/global/js/easyui/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="/global/js/easyui/locale/easyui-lang-zh_CN.js"></script>
+    <script type="text/javascript" src="/global/js/super/super.js"></script>
+    <script type="text/javascript" src="/global/js/commonUtils.js"></script>
+    <script type="text/javascript" src="/global/js/global.js"></script>
+    <script type="text/javascript" src="/page/index/horizontalMenu/index.js"></script>
+
+</head>
+<body id="main" class="easyui-layout">
+<input type="hidden" id="theme-name" th:value="${sysSettings.theme}" />
+<div data-options="region:'north',border:false" class="super-north">
+    <!--顶部-->
+    <div class="super-navigation">
+        <!--系统名称-->
+        <div class="super-navigation-title">
+            <img th:src="${sysSettings.siteLogo}" style="height: 36px;" />
+            <span th:text="${sysSettings.siteName}">大庆金桥软件开发平台</span>
+        </div>
+        <!--自定义导航-->
+        <div class="super-navigation-main">
+            <div class="super-setting-left">
+                <!--
+                    <ul>
+                        <li><i class="fa fa-commenting-o"></i>消息</li>
+                        <li><i class="fa fa-envelope-o"></i>邮件</li>
+                        <li><i class="fa fa-bell-o"></i>通知</li>
+                    </ul>
+                -->
+            </div>
+            <div class="super-setting-right">
+                <ul>
+                    <li>
+                        <div class="user-head-image-container">
+                            <img id="index-user-head-image" th:if="${session.currentUser.headImage != null && session.currentUser.headImage != ''}"
+                                 th:src="${'data:image/jpeg;base64,' + session.currentUser.headImage}" style="height: 32px;" />
+                            <img id="index-user-head-image" th:if="${session.currentUser.headImage == null || session.currentUser.headImage == ''}"
+                                 src="/global/img/default_user_icon.png" style="height: 32px;" />
+                        </div>
+                        &nbsp;
+                        <span th:text="${session.currentUser.realName}"></span>
+                    </li>
+                    <li>
+                        <div class="super-setting-icon">
+                            <i class="fa fa-gears"></i> 设置
+                        </div>
+                        <div id="mm" class="easyui-menu">
+                            <div onclick="editProfile();">个人信息</div>
+                            <div onclick="openEditPasswordDialog();">修改密码</div>
+                            <div class="menu-sep"></div>
+                            <div id="themeSetting">主题</div>
+                        </div>
+                    </li>
+                    <li>
+                        <div id="logout"><i class="fa fa-sign-out"></i> 注销</div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="mod-header">
+    <div class="menu-layout clearfix">
+
+        <div class="mod-header-nav">
+            <ul id="jmod-header-nav">
+                <li th:each="m,mIndex:${menus}" class="top-cat" th:classappend="${m.hasSub} ? 'hassub'" th:attr="data-cat=|${m.menu.id}|">
+                    <h2>
+                        <a th:if="${m.menu.url != null and m.menu.url != ''}" href="javascript:void(0)"
+                           th:onclick="addTab('[[${m.menu.name}]]', '[[${m.menu.url}]]', '[[${m.menu.fontIcon}]]', '[[${m.menu.integrateType}]]')">
+                            <span th:text="${m.menu.name}"></span>
+                            <i th:if="${m.hasSub}" class="top-cat-arrow"></i>
+                        </a>
+
+                        <div th:if="${m.menu.url == null or m.menu.url == ''}" th:remove="tag">
+                            <span th:text="${m.menu.name}"></span>
+                            <i th:if="${m.hasSub}" class="top-cat-arrow"></i>
+                        </div>
+                    </h2>
+                </li>
+            </ul>
+            <i class="jmod-nav-slider slider hidden" style="transform: translateX(0px);"></i>
+        </div>
+    </div>
+</div>
+<div class="sub-mod">
+    <div class="cat">
+        <div th:each="m1,m1State:${menus}" class="cat-box" th:attr="data-cat=|${m1.menu.id}|">
+            <div class="menu-layout">
+                <div th:each="m2,m2State:${m1.subMenus}" class="cat-group">
+                    <h3 class="cat-tit">
+                        <a th:if="${m2.menu.url != null and m2.menu.url != ''}" href="javascript:void(0)" th:onclick="addTab([[${m2.menu.name}]], [[${m2.menu.url}]], [[${m2.menu.fontIcon}]], [[${m2.menu.integrateType}]])">
+                            <div class="cat-ico"><i th:class="${m2.menu.fontIcon}"></i></div><span th:text="${m2.menu.name}"></span>
+                        </a>
+                        <div th:if="${m2.menu.url == null or m2.menu.url == ''}" th:remove="tag">
+                            <div class="cat-ico"><i th:class="${m2.menu.fontIcon}"></i></div><span th:text="${m2.menu.name}"></span>
+                        </div>
+                    </h3>
+                    <ul th:if="${m2.hasSub}" class="cat-list">
+                        <li class="cat-item" th:each="m3,m3State:${m2.subMenus}">
+                            <div class="cat-item-main">
+                                <a th:if="${m3.menu.url != null and m3.menu.url != ''}" href="javascript:void(0)" th:onclick="addTab([[${m3.menu.name}]], [[${m3.menu.url}]], [[${m3.menu.fontIcon}]], [[${m3.menu.integrateType}]])">
+                                    <span th:text="${m3.menu.name}"></span>
+                                </a>
+                                <p th:if="${m3.menu.url == null or m3.menu.url == ''}" th:remove="tag">
+                                    <span th:text="${m3.menu.name}"></span>
+                                </p>
+                            </div>
+                            <div th:if="${m3.hasSub}" class="cat-item-sub">
+                                <div th:each="m4,m4State:${m3.subMenus}" th:remove="tag">
+                                    <div th:remove="tag" th:utext="${m4State.index % 4 == 0} ? '&lt;div class=cat-item-row&gt;' : ''"></div>
+                                    <a th:if="${m4.menu.url != null and m4.menu.url != ''}" href="javascript:void(0)" th:onclick="addTab([[${m4.menu.name}]], [[${m4.menu.url}]], [[${m4.menu.fontIcon}]], [[${m4.menu.integrateType}]])" th:text="${m4.menu.name}"></a>
+                                    <a th:if="${m4.menu.url == null or m4.menu.url == ''}" href="javascript:void(0)" th:text="${m4.menu.name}"></a>
+                                    <div th:remove="tag" th:utext="${m4State.index % 4 == 3} ? '&lt;/div&gt;' : ''"></div>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!--左侧导航-->
+<!--
+<div data-options="region:'west',border:false,title:'系统菜单', iconCls:'fa fa-list-ul'" class="super-west">
+
+    <div class="easyui-accordion" data-options="border:false,fit:true,selected:true">
+        <div th:each="m,mStat:${firstLevelMenus}" th:title="${m.name}" style="overfloat:auto;padding:0;"
+             th:attr="iconCls=|${m.fontIcon}|">
+            <ul th:id="'menu_tree_' + ${m.id}" class="easyui-tree"></ul>
+        </div>
+    </div>
+</div>
+-->
+<div data-options="region:'center'" style="padding-top: 2px;">
+    <input type="hidden" id="default-menu-name" th:value="${sysSettings.defaultMenuName}" />
+    <input type="hidden" id="default-menu-icon" th:value="${sysSettings.defaultMenuIcon}" />
+    <input type="hidden" id="default-menu-url" th:value="${sysSettings.defaultMenuUrl}" />
+    <input type="hidden" id="default-menu-integrate-type" th:value="${sysSettings.defaultMenuIntegrateType}" />
+    <!--主要内容-->
+    <div id="content-tabs" class="easyui-tabs" data-options="border:false,fit:true,onContextMenu:tabContextMenuClicked">
+    </div>
+</div>
+<div data-options="region:'south'" class="super-south">
+    <!--页脚-->
+    <div class="super-footer-info">
+        <span><i class="fa fa-copyright"></i> CopyRight 2021 版权所有 <i class="fa fa-caret-right"></i></span>
+    </div>
+</div>
+
+<!--主题设置弹窗-->
+<div id="win">
+    <div class="themeItem">
+        <ul>
+            <li th:class="${sysSettings.theme == 'superGreen'} ? themeActive : ''">
+                <div class="superGreen" style="background: #1abc9c;">green</div>
+            </li>
+            <li th:class="${sysSettings.theme == 'superBlue'} ? themeActive : ''">
+                <div class="superBlue" style="background: #3498db;">blue</div>
+            </li>
+            <li th:class="${sysSettings.theme == 'superGray'} ? themeActive : ''">
+                <div class="superGray" style="background: #95a5a6;">gray</div>
+            </li>
+            <li th:class="${sysSettings.theme == 'superAmethyst'} ? themeActive : ''">
+                <div class="superAmethyst" style="background: #9b59b6;">amethyst</div>
+            </li>
+            <li th:class="${sysSettings.theme == 'superBlack'} ? themeActive : ''">
+                <div class="superBlack" style="background: #34495e;">black</div>
+            </li>
+            <li th:class="${sysSettings.theme == 'superYellow'} ? themeActive : ''">
+                <div class="superYellow" style="background: #e67e22;">yellow</div>
+            </li>
+            <li th:class="${sysSettings.theme == 'superEmerald'} ? themeActive : ''">
+                <div class="superEmerald" style="background: #2ecc71;">emerald</div>
+            </li>
+            <li th:class="${sysSettings.theme == 'superRed'} ? themeActive : ''">
+                <div class="superRed" style="background: #e74c3c;">red</div>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<!-- 修改密码对话框 -->
+<div id="edit-user-password-dialog" class="edit-dialog">
+    <div class="table-container">
+        <form id="edit-user-password-form" method="post">
+            <table class="edit-table">
+                <tr>
+                    <th>原密码：</th>
+                    <td>
+                        <input class="easyui-passwordbox" name="oldpassword" data-options="required:true,width:240" />
+                    </td>
+                </tr>
+                <tr>
+                    <th>新密码：</th>
+                    <td>
+                        <input class="easyui-passwordbox" id="myNewpassword" name="newpassword" data-options="required:true,width:240" />
+                    </td>
+                </tr>
+                <tr>
+                    <th>确认密码：</th>
+                    <td>
+                        <input class="easyui-passwordbox" data-options="required:true,equals:['#myNewpassword'],width:240,showEye:true" />
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="color:rgb(199,0,11)" th:utext="${passwordStrengthDescription}"></td>
+                </tr>
+            </table>
+        </form>
+    </div>
+</div>
+
+<!-- tabs右键菜单 -->
+<div id="tabs-context-menu" class="easyui-menu" data-options="onClick:tabContextMenuItemClicked">
+    <div iconCls="fa fa-refresh">刷新</div>
+    <div class="menu-sep"></div>
+    <div iconCls="fa fa-remove">关闭</div>
+    <div iconCls="fa fa-remove">关闭活动页</div>
+    <div>关闭其他页</div>
+    <div>关闭所有页</div>
+</div>
+
+<script src="/page/index/ai.js" type="text/javascript"></script>
+</body>
+</html>

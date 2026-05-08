@@ -1,0 +1,86 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:xunjia="http://www.thymeleaf.org">
+
+<body>
+	<div class="easyui-layout" fit="true">
+		<div data-options="region:'west',width:210">
+			<div id="select-org-tree" class="easyui-tree" data-options="
+				url: '/org/getEnableOrgTree',
+				animate: true,
+				onClick: selectOrgClicked
+			"></div>
+		</div>
+		<div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+			<input id="select-org-pyCode-key" class="easyui-textbox" data-options="width:240,label:'名称拼音码：' ,labelAlign:'right',labelWidth:80" />
+			<input id="select-org-code-key" class="easyui-textbox" data-options="width:240,label:'组织代码：' ,labelAlign:'right',labelWidth:80" />
+			<a href="javascript:" onclick="selectSearchOrganization();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+		</div>
+		<div data-options="region:'center'">
+			<table id="select-org-table"></table>
+		</div>
+	</div>
+	
+	<script th:inline="none">
+	$(function(){
+		$("#select-org-table").datagrid({
+			url: '/org/findOrganizations?enable=1',
+			idField: 'id',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: true,
+			pageSize: 20,
+			rownumbers: true,
+			columns: [[
+				{
+					field: 'id',
+					checkbox: true
+				},
+				{
+					field: 'name',
+					title: '组织名称',
+					width: 80
+				}, {
+					field: 'code',
+					title: '组织代码',
+					width: 60
+				}, {
+					field: 'pyCode',
+					title: '拼音码',
+					width: 80
+				}, {
+					field: 'orderNo',
+					title: '排序号',
+					width: 80
+				}, {
+					field: 'type',
+					title: '组织类型',
+					width: 80,
+					formatter: function(value, row, index){
+						return value.name;
+					}
+				}
+			]]
+		});
+	});
+	
+	function selectOrgClicked(node){
+		$("#select-org-tree").tree("toggle", node.target);
+		$("#select-org-table").datagrid("clearSelections");
+		selectSearchOrganization();
+	}
+	
+	function selectSearchOrganization(){
+		var selectedNode = $("#select-org-tree").tree("getSelected");
+		$("#select-org-table").datagrid('load', {
+			'pyCode': $("#select-org-pyCode-key").textbox('getValue'),
+			'code': $("#select-org-code-key").textbox('getValue'),
+			'parentId': selectedNode == null ? '' : selectedNode.id
+		});
+	}
+	</script>
+</body>
+</html>

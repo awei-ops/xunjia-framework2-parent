@@ -1,0 +1,32 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:bf="http://www.thymeleaf.org">
+	
+<div class="table-container">
+	<form id="edit-org-form" method="post">
+		<table class="edit-table">
+			<tr>
+				<th style="width:15%">任务名称：</th>
+				<td id="td_jobName"></td>
+				<th style="width:15%">任务实例id：</th>
+				<td id="td_jobInstId"></td>
+			</tr>
+			<tr>
+				<th>执行时间：</th>
+				<td id="td_startTime"></td>
+				<th>结束时间：</th>
+				<td id="td_finishTime"></td>
+			</tr>
+			<tr>
+				<th>执行结果：</th>
+				<td id="td_executeResult" colspan="3"></td>
+			</tr>
+			<tr>
+				<th>返回信息：</th>
+				<td id="td_executeMsg" colspan="3"></td>
+			</tr>
+		</table>
+	</form>
+</div>
+</html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge,chrome=1">
+    <title>Title</title>
+    <link href="/page/index/ai.css" type="text/css" rel="stylesheet" />
+    <link rel="stylesheet" type="text/css" href="/global/css/font-awesome-4.7.0/css/font-awesome.min.css">
+
+
+    <script src="/page/index/jquery-1.10.2.js" type="text/javascript"></script>
+</head>
+<body>
+<div class="mod-header">
+    <div class="cat">
+
+        <div th:each="m1,m1State:${menus}" class="cat-box" th:attr="data-cat=|${m1.menu.id}|">
+            <div class="menu-layout">
+                <div th:each="m2,m2State:${m1.subMenus}" class="cat-group">
+                    <h3 class="cat-tit">
+                        <a th:if="${m2.menu.url != null and m2.menu.url != ''}" th:href="'javascript:addTab(\''+ ${m2.menu.name} +'\', \''+ ${m2.menu.url} +'\', \''+ ${m2.menu.fontIcon} +'\', \''+ ${m2.menu.integrateType} +'\')'">
+                            <div class="cat-ico"><i th:class="${m2.menu.fontIcon}"></i></div><span th:text="${m2.menu.name} + 'bb'"></span>
+                        </a>
+                        <div th:if="${m2.menu.url == null or m2.menu.url == ''}" th:remove="tag">
+                            <div class="cat-ico"><i th:class="${m2.menu.fontIcon}"></i></div><span th:text="${m2.menu.name + 'aa'}"></span>
+                        </div>
+                    </h3>
+                    <ul th:if="${m2.hasSub}" class="cat-list">
+                        <li class="cat-item" th:each="m3,m3State:${m2.subMenus}">
+                            <div class="cat-item-main">
+                                <a th:if="${m3.menu.url != null and m3.menu.url != ''}" th:href="'javascript:addTab(\''+ ${m3.menu.name} +'\', \''+ ${m3.menu.url} +'\', \''+ ${m3.menu.fontIcon} +'\', \''+ ${m3.menu.integrateType} +'\')'">
+                                    <span th:text="${m3.menu.name}"></span>
+                                </a>
+                                <p th:if="${m3.menu.url == null or m3.menu.url == ''}" th:remove="tag">
+                                    <span th:text="${m3.menu.name}"></span>
+                                </p>
+                            </div>
+                            <div th:if="${m3.hasSub}" class="cat-item-sub">
+                                <div th:each="m4,m4State:${m3.subMenus}" th:remove="tag">
+                                    <div th:remove="tag" th:utext="${m4State.index % 4 == 0} ? '&lt;div class=cat-item-row&gt;' : ''"></div>
+                                        <a th:if="${m4.menu.url != null and m4.menu.url != ''}" th:href="'addTab(\''+ ${m4.menu.name} +'\', \''+ ${m4.menu.url} +'\', \''+ ${m4.menu.fontIcon} +'\', \''+ ${m4.menu.integrateType} +'\')'" th:text="${m4.menu.name}"></a>
+                                        <a th:if="${m4.menu.url == null or m4.menu.url == ''}" href="javascript:" th:text="${m4.menu.name}"></a>
+                                    <div th:remove="tag" th:utext="${m4State.index % 4 == 3} ? '&lt;/div&gt;' : ''"></div>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="menu-layout clearfix">
+
+        <div class="mod-header-nav">
+            <ul id="jmod-header-nav">
+                <li th:each="m,mIndex:${menus}" class="top-cat" th:classappend="${m.hasSub} ? 'hassub'" th:attr="data-cat=|${m.menu.id}|">
+                    <h2>
+                       <a th:href="${(m.menu.url == null or m.menu.url == '') ? '#' : 'addTab('+ m.menu.name +', '+ m.menu.url +', '+ m.menu.fontIcon +', '+ m.menu.integrateType +')'}">
+                           <span th:text="${m.menu.name}"></span>
+                           <i th:if="${m.hasSub}" class="top-cat-arrow"></i>
+                       </a>
+                    </h2>
+                </li>
+            </ul>
+            <i class="jmod-nav-slider slider hidden" style="transform: translateX(0px);"></i>
+        </div>
+    </div>
+</div>
+<div class="banner jmod_banner">
+    <div class="ban cur" style="background-color:#1e1f21;height: 62px;">
+    </div>
+</div>
+
+<script src="/page/index/ai.js" type="text/javascript"></script>
+</body>
+
+</html>

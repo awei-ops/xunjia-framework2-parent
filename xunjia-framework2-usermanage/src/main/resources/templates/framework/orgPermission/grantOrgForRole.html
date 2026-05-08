@@ -1,0 +1,133 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:bf="http://www.thymeleaf.org">
+	
+<body>
+	<div class="easyui-layout" fit="true">
+		<div data-options="region:'west',border:false" style="width:26%;">
+			<div id="role-grant-org-tree"></div>
+		</div>
+		<div data-options="region:'center',border:false">
+			<table id="role-grant-org-table"></table>
+		</div>
+	</div>
+	<script th:inline="none">
+		$("#role-grant-org-tree").tree({
+			url: '/org/getEnableOrgTree',
+			animate: true,
+			onClick: function(node){
+				searchOrgs();
+			}
+		});
+		
+		$("#role-grant-org-table").datagrid({
+			url: '/orgPermission/findOrgs?ownerType=R&ownerId=' + $("#org-role-list-table").datagrid("getSelections")[0].id,
+			idField: 'orgId',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: true,
+			pageSize: 20,
+			rownumbers: true,
+			checkOnSelect: true,
+			nowrap: false,
+			columns: [[
+				{
+					field: 'orgId',
+					checkbox: true
+				}, {
+					field: 'orgName',
+					title: '组织名称',
+					width: 80
+				}, {
+					field: 'a',
+					title: '授权状态',
+					align: 'center',
+					width: 30,
+					formatter: function(value, row, index){
+						if (row.orgRighted){
+							return "已授权";
+						}
+					}
+				}
+			]]
+		});
+		
+		function searchOrgs(){
+			var selectedNode = $("#role-grant-org-tree").tree("getSelected"); 
+			$("#role-grant-org-table").datagrid('load', {
+				'parentId': selectedNode == null ? '' : selectedNode.id
+			});
+		}
+		
+		function submitGrant(){
+			var selectedRows = $("#role-grant-org-table").datagrid("getSelections");
+			if (selectedRows == null || selectedRows.length == 0){
+				$.messager.alert("提示信息", "您未选择任何要授权的组织。", "warning");
+				return;
+			}
+			
+			var orgIds = new Array();
+			$.each(selectedRows, function(i, n){
+				orgIds[i] = n.orgId;
+			});
+			
+			$.ajax({
+				url: '/orgPermission/save',
+				data: {
+					'ownerType': 'R',
+					'ownerId': $("#org-role-list-table").datagrid("getSelections")[0].id,
+					'orgIds[]': orgIds
+				},
+				type: 'post',
+				dataType: 'json',
+				success: function(data){
+					if (data.result){
+						$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+						$("#role-grant-org-table").datagrid('reload');
+						$("#role-grant-org-table").datagrid('clearSelections');
+					} else {
+						$.messager.alert('提示信息', data.msg, 'error');
+					}	
+				}
+			});
+		}
+		
+		function recoverGrant(){
+			var selectedRows = $("#role-grant-org-table").datagrid("getSelections");
+			if (selectedRows == null || selectedRows.length == 0){
+				$.messager.alert("提示信息", "您未选择任何要回收权限的组织。", "warning");
+				return;
+			}
+			
+			var orgIds = new Array();
+			$.each(selectedRows, function(i, n){
+				orgIds[i] = n.orgId;
+			});
+			
+			$.ajax({
+				url: '/orgPermission/recover',
+				data: {
+					'ownerType': 'R',
+					'ownerId': $("#org-role-list-table").datagrid("getSelections")[0].id,
+					'orgIds[]': orgIds
+				},
+				type: 'post',
+				dataType: 'json',
+				success: function(data){
+					if (data.result){
+						$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+						$("#role-grant-org-table").datagrid('reload');
+						$("#user-grant-org-table").datagrid('clearSelections');
+					} else {
+						$.messager.alert('提示信息', data.msg, 'error');
+					}	
+				}
+			});
+		}
+	</script>
+</body>
+
+</html>

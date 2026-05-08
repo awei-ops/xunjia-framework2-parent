@@ -1,0 +1,154 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" xmlns:xunjia="http://www.thymeleaf.org">
+
+<head>
+	<div th:replace="framework/include/head::head"></div>
+</head>
+
+<body>
+	<div class="easyui-layout" fit="true">
+		<div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+			<input id="query-assessmentDate-key" class="easyui-datebox" editable="false" value="true"
+				data-options="width:240,label:'考核时间：' ,labelAlign:'right',labelWidth:90" />
+			<!--        <a>评价周期：</a>-->
+			<!--        <input type="radio" checked="checked" name="cycle" value="日">日-->
+			<!--        <input type="radio" name="cycle" value="月">月-->
+			<!--        <input type="radio" name="cycle" value="年">年-->
+			<a href="javascript:" onclick="searchPageData();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+			<a href="javascript:" onclick="computeZyq();" class="easyui-linkbutton"
+				iconCls="fa fa-calculator">计算作业区得分</a>
+		</div>
+		<div data-options="region:'center'">
+			<table id="display-data-table"></table>
+		</div>
+	</div>
+
+	<script th:inline="none">
+		$(function () {
+			$("#display-data-table").datagrid({
+				url: '/zyq_jxpj/getZYQJXPJ',
+				fit: true,
+				fitColumns: true,
+				striped: true,
+				loadMsg: '数据加载中，请稍候...',
+				pagination: false,
+				pageSize: 20,
+				rownumbers: true,
+				queryParams: {
+					cycle: '日',
+					assessmentDate: $('#query-assessmentDate-key').datebox('getValue')
+				},
+				onLoadSuccess: function () {// 合并单元格
+					computeMergeCell();
+				},
+				columns: [[
+					{ "field": "stationName", "title": "站名称", "width": 110 },
+					{ "field": "jx_score", "title": "总得分", "width": 110 },
+					{ "field": "levelOne_name", "title": "一级指标名称", align: 'center', "width": 100 },
+					{ "field": "levelOne_weight", "title": "一级指标权重", "width": 110 },
+					{ "field": "levelOne_score", "title": "一级指标得分", "width": 110 },
+					{ "field": "levelTwo_name", "title": "二级指标名称", align: 'center', "width": 100 },
+					{ "field": "levelTwo_weight", "title": "二级指标权重", "width": 110 },
+					{ "field": "levelTwo_score", "title": "二级指标得分", "width": 110 },
+					{ "field": "levelThree_name", "title": "三级指标名称", align: 'center', "width": 110 },
+					{ "field": "levelThree_weight", "title": "三级指标权重", "width": 110 },
+					{ "field": "levelThree_score", "title": "三级指标得分", "width": 110 },
+				]]
+			});
+		});
+
+		function mergeCells(i, field, rowspan, colspan) {
+			//mergeCells合并单元格，index第几行开始，field合并的字段，rowspan合并行数，colspan合并列
+			$('#display-data-table').datagrid('mergeCells', {
+				index: i,
+				field: field,
+				rowspan: rowspan,
+				colspan: colspan
+			});
+		}
+
+		function computeMergeCell() {
+			let rows = $('#display-data-table').datagrid("getRows");//获取行的数据
+			let columns = $('#display-data-table').datagrid("options").columns;
+			for (let k = 0; k < columns[0].length; k++) {
+
+				if (columns[0][k].field === 'stationName') {
+					for (let i = 0; i < rows.length; i++) {
+						let rowspan = 0;
+						for (let j = i; j < rows.length; j++) {
+							if (rows[i].stationName == rows[j].stationName) {//计算合并多少行
+								rowspan++;
+							}
+						}
+						if (rowspan > 1) {
+							mergeCells(i, 'stationName', rowspan, 1);
+							mergeCells(i, 'jx_score', rowspan, 1);
+							i = i + rowspan - 1;
+						}
+					}
+				}
+
+				if (columns[0][k].field === 'levelOne_name') {
+					for (let i = 0; i < rows.length; i++) {
+						let rowspan = 0;
+						for (let j = i; j < rows.length; j++) {
+							if (rows[i].stationName == rows[j].stationName && rows[i]['levelOne_name'] === rows[j]['levelOne_name']) {//计算合并多少行
+								rowspan++;
+							}
+						}
+						if (rowspan > 1) {
+							mergeCells(i, 'levelOne_name', rowspan, 1);
+							mergeCells(i, 'levelOne_weight', rowspan, 1);
+							mergeCells(i, 'levelOne_score', rowspan, 1);
+							i = i + rowspan - 1;
+						}
+					}
+				}
+
+
+				if (columns[0][k].field === 'levelTwo_name') {
+					for (let i = 0; i < rows.length; i++) {
+						let rowspan = 0;
+						for (let j = i; j < rows.length; j++) {
+							if (rows[i].stationName == rows[j].stationName && rows[i]['levelOne_name'] === rows[j]['levelOne_name'] && rows[i]['levelTwo_name'] === rows[j]['levelTwo_name']) {//计算合并多少行
+								rowspan++;
+							}
+						}
+						if (rowspan > 1) {
+							mergeCells(i, 'levelTwo_name', rowspan, 1);
+							mergeCells(i, 'levelTwo_weight', rowspan, 1);
+							mergeCells(i, 'levelTwo_score', rowspan, 1);
+							i = i + rowspan - 1;
+						}
+					}
+				}
+			}
+		}
+
+		function searchPageData() {
+			$("#display-data-table").datagrid('load', {
+				// 'cycle': $('input:radio:checked').val(),
+				'cycle': '日',
+				'assessmentDate': $("#query-assessmentDate-key").datebox('getValue'),
+			});
+		}
+
+		function computeZyq() {
+			$.ajax({
+				type: "get",
+				async: false,
+				url: "/zyq_jxpj/create_ZYQ_RSJ",
+				data: {
+					rq: $('#query-assessmentDate-key').datebox('getValue'),
+				},
+				success: function (response) {
+					$.messager.alert("提示信息", "计算完成。", "info");
+					searchPageData();
+				}
+			})
+		}
+
+	</script>
+</body>
+
+</html>

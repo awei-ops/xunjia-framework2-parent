@@ -1,0 +1,65 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title th:text="${siteName + ' - 用户登录'}">用户登录</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta charset="UTF-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+	<meta name="viewport" content="width-device-width,initial-scale=1.0">
+	<link type="text/css" rel="stylesheet" href="global/css/font-awesome-4.7.0/css/font-awesome.min.css">
+	<link type="text/css" rel="stylesheet" href="global/js/super/superRed.css">
+	<link type="text/css" rel="stylesheet" href="page/login/css/style.css">
+	<link type="text/css" rel="stylesheet" href="page/login/css/drag.css">
+	<link type="text/css" rel="stylesheet" href="global/css/global.css">
+
+</head>
+<body>
+	<div class="title">
+		<!--<img th:src="${logo}" />-->
+		<h2 th:text="${siteName}">油田生产地面系统节能绩效评价平台</h2>
+	</div>
+	<div class="container right-panel-active" id="container">
+
+		<div class="form-container sign-up-container">
+			<form id="login-form">
+				<h1>用户登录</h1>
+				<input type="text" id="username" name="username" placeholder="用户名" required />
+				<input type="password" id="password" name="password" placeholder="密码" required />
+				<div class="verify-code">
+					<div id="drag" style="display:none;"></div>
+				</div>
+				<button>登&emsp;录</button>
+
+				<div class="err_msg" style="margin-bottom:10px;">&nbsp;</div>
+			</form>
+		</div>
+	</div>
+
+	<div class="beian">
+
+	</div>
+</body>
+<!-- 引入jquery -->
+<script type="text/javascript" src="global/js/jquery.min.js"></script>
+<script type="text/javascript" src="global/js/easyui/jquery.easyui.min.js"></script>
+<script type="text/javascript" src="global/js/jquery.form.js"></script>
+<script type="text/javascript" src="page/login/js/drag.js"></script>
+<script type="text/javascript" src="page/login/js/login.js"></script>
+<script type="text/javascript" src="page/login/js/ionicons.js"></script>
+<script th:inline="javascript">
+	if (self != top){
+		window.top.location.href = "/";
+	}
+
+
+	var verify = [[${needVerify}]];
+	var ssoUrl = [[${ssoUrl}]];
+	var ssoClientId = [[${ssoClientId}]];
+	var defaultMsg = [[${defaultMsg}]];
+	if (defaultMsg != null && defaultMsg != ''){
+		$(".err_msg").text(defaultMsg);
+        $(".err_msg").show();
+	}
+</script>
+</html>

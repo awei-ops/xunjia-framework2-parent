@@ -1,0 +1,106 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org">
+	
+
+<div class="table-container">
+	<form id="edit-resource-form" method="post">
+		<input type="hidden" id="resource-id" name="id" />
+		<input type="hidden" id="resource-enable" name="enable" />
+		<input type="hidden" id="resource-type" name="type" value="按钮" />
+		<input type="hidden" id="resource-category" name="category" value="WEB">
+		<table class="edit-table">
+			<tr>
+				<th>资源名称：</th>
+				<td>
+					<input class="easyui-textbox" id="resource-name" name="name" data-options="required:true,width:310" />
+				</td>
+			</tr>
+			<tr>
+				<th>资源编码：</th>
+				<td>
+					<input class="easyui-textbox" id="resource-code" name="code" data-options="width:310" />
+				</td>
+			</tr>
+			<tr>
+				<th>上级资源：</th>
+				<td>
+					<select class="easyui-combotree" id="resource-parent" name="parentId" data-options="
+						width: 310,
+						url: '/resource/findResourceTree',
+						textField: 'name',
+						valueField: 'id',
+						required: true
+					">
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<th>权限码：</th>
+				<td>
+					<input class="easyui-textbox" id="resource-permissionCode" name="permissionCode" data-options="width:310,required:true" />
+				</td>
+			</tr>
+			<tr id="tr-resource-onclick">
+				<th>点击事件：</th>
+				<td>
+					<input class="easyui-textbox" id="resource-onclick" name="onclick" data-options="width:310" />
+				</td>
+			</tr>
+			<tr id="tr-resource-style">
+				<th>资源样式：</th>
+				<td>
+					<input class="easyui-textbox" id="resource-style" name="style" data-options="width:310" />
+				</td>
+			</tr>
+			<tr>
+				<th>字符图标：</th>
+				<td>
+					<input class="easyui-textbox" id="resource-fontIcon" name="fontIcon" data-options="width:310,buttonText:'选择图标',onClickButton:showSelectFontIconDialog" />
+				</td>
+			</tr>
+			<tr style="display:none;">
+				<th>图形图标：</th>
+				<td>
+					<input class="easyui-filebox" id="resource-imgIcon" name="imgIconFile" data-options="width:310,accept:'image/gif,image/x-icon,image/png,image/jpg',buttonText:'选择图标'" />
+					<a class="easyui-linkbutton" href="javascript:" onclick="removeImgIcon();" data-options="iconCls:'fa fa-remove'">删除</a>
+				</td>
+			</tr>
+			<tr>
+				<th>分级授权：</th>
+				<td>
+					<select class="easyui-combobox" id="resource-allowGrant" name="allowGrant"
+					data-options="width:310,panelHeight:'auto',required:true,editable:false">
+						<option value="1" selected>允许</option>
+						<option value="0">不允许</option>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<th>排序号：</th>
+				<td>
+					<input class="easyui-numberbox" id="resource-orderNo" name="orderNo" data-options="required:true,min:0,precision:0,width:310" value="1" />
+				</td>
+			</tr>
+		</table>
+	</form>
+</div>
+<script>
+	function removeImgIcon(){
+		$.ajax({
+			url: '/resource/deleteImgIcon',
+			data: { id: $("#resource-id").val() },
+			type: 'post',
+			dataType: 'json',
+			success: function(data){
+				if (data.result){
+					$("#resource-imgIcon").filebox('setValue', '');
+					$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+				} else {
+					$.messager.alert("提示信息", data.msg, "error");
+				}
+			}
+		});
+	}
+</script>
+</html>

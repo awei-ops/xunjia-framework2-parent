@@ -1,0 +1,225 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:xunjia="http://www.thymeleaf.org">
+
+<head>
+    <div th:replace="framework/include/head::head"></div>
+</head>
+
+<body>
+<div class="easyui-layout" fit="true">
+    <div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+        <input id="device-type-name-key" class="easyui-textbox"
+               data-options="width:240,label:'名称：' ,labelAlign:'right',labelWidth:90"/>
+        <input id="device-type-code-key" class="easyui-textbox"
+               data-options="width:240,label:'编码：' ,labelAlign:'right',labelWidth:90"/>
+        <a href="javascript:" onclick="searchPageData();" class="easyui-linkbutton"
+           iconCls="fa fa-search">查询</a>
+    </div>
+    <div data-options="region:'center'">
+        <table id="display-data-table"></table>
+        <div id="user-operation-bar" class="datagrid-toolbar">
+            <xunjia:button th:menu-id="${menuId}" perm-code="basicDeviceType:save"/>
+            <xunjia:button th:menu-id="${menuId}" perm-code="basicDeviceType:update"/>
+            <xunjia:button th:menu-id="${menuId}" perm-code="basicDeviceType:delete"/>
+        </div>
+    </div>
+</div>
+
+<script th:inline="none">
+    var queryType = getUrlParam('deviceCategory')
+	$(function(){
+		$("#display-data-table").datagrid({
+			url: '/basicDeviceType/findBasicDeviceTypes',
+			idField: 'id',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: true,
+			pageSize: 20,
+			rownumbers: true,
+			toolbar: "#user-operation-bar",
+			queryParams: {
+		        deviceCategory: queryType,
+	        },
+			columns: [[
+				{
+					field: 'id',
+					checkbox: true
+				},
+				{
+					field: 'deviceTypeName',
+					title: '类型名称',
+					width: 80
+				}, {
+					field: 'deviceTypeCode',
+					title: '类型编码',
+					width: 60
+				}
+			]]
+		});
+	});
+
+	function getUrlParam(name) {
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)"); //构造一个含有目标参数的正则表达式对象
+        var r = window.location.search.substr(1).match(reg);  //匹配目标参数
+        if (r != null) return unescape(r[2]); return null; //返回参数值
+    }
+	
+	function add(){
+		var addDialog = $("<div></div>").dialog({
+			title: '添加数据',
+			width: 630,
+			height: 340,
+			modal: true,
+			iconCls: "fa fa-pencil-square-o",
+			href: '/basicDeviceType/toAdd',
+			onLoad: function(){
+			    $("#device-category").val(queryType);
+			},
+			onClose : function() {
+                $(this).dialog('destroy');
+            },
+			buttons: [
+				{ 
+					text: '保存',
+					iconCls: 'fa fa-save', 
+					handler: function(){
+						submitDataForm("add-form", addDialog, "/basicDeviceType/save");
+					} 
+				},
+				{ 
+					text: '关闭', 
+					iconCls: 'fa fa-close', 
+					handler: function() { 
+						addDialog.dialog('destroy'); 
+					}
+				}
+			]
+		});
+	}
+	
+	function edit(){
+		var selectedRows = $("#display-data-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要编辑的记录。", "warning");
+		} else if (selectedRows.length > 1){
+			$.messager.alert("提示信息", "您只能选择一条记录进行操作。", "warning");
+		} else {
+			var editDialog = $("<div></div>").dialog({
+				title: '编辑数据',
+				width: 630,
+				height: 340,
+				modal: true,
+				iconCls: "fa fa-pencil-square-o",
+				href: '/basicDeviceType/toEdit',
+				onClose : function() {
+	                $(this).dialog('destroy');
+	            },
+				onLoad: function(){
+				    $("#device-category").val(queryType);
+					$.ajax({
+						url: '/basicDeviceType/findById',
+						data: { id: selectedRows[0].id },
+						type: 'get',
+						dataType: 'json',
+						success: function(data){
+							$("#indicator-id").val(data.id);
+							$("#indicator-original-code").val(data.deviceTypeCode);
+							$("#device-type-name").textbox('setValue', data.deviceTypeName);
+							$("#device-type-code").textbox('setValue', data.deviceTypeCode);
+						}
+					});	
+				},
+				buttons: [
+					{ 
+						text: '保存', 
+						iconCls: 'fa fa-save', 
+						handler: function(){
+							submitDataForm("edit-form", editDialog, "/basicDeviceType/update");
+						} 
+					},
+					{ 
+						text: '关闭', 
+						iconCls: 'fa fa-close', 
+						handler: function(){ 
+							editDialog.dialog('destroy'); 
+						} 
+					}
+				]
+			});
+		}
+	}
+	
+	function dataRemove(){
+		var selectedRows = $("#display-data-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要删除的记录。", "warning");
+		} else {
+			$.messager.confirm('删除确认', '您是否确认要删除选中的记录？', function(r){
+				if (r){
+					var ids = new Array();
+					$.each(selectedRows, function(i, n){
+						ids[i] = n.id;
+					});
+					
+					$.ajax({
+						url: '/basicDeviceType/delete',
+						data: { "ids[]": ids },
+						type: 'post',
+						dataType: 'json',
+						success: function(data){
+							if (data.result){
+								$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+								$("#display-data-table").datagrid("reload");
+								$("#display-data-table").datagrid("clearSelections");
+							} else {
+								$.messager.alert("提示信息", data.msg, "error");
+							}
+						}
+					});	
+				}
+			});
+		}
+	}
+	
+	function submitDataForm(formId, dialog, url){
+	    var validate;
+		$("#" + formId).form('submit', {
+			url: url,
+			onSubmit: function(){
+			    validate = $(this).form("validate");
+                return validate;
+			},
+			success: function(data){
+			    if(validate){
+                    data = $.parseJSON(data);
+                    if (data.result){
+                        dialog.dialog("destroy");
+                        $.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+                        $("#display-data-table").datagrid("reload");
+                        $("#display-data-table").datagrid("clearSelections");
+                    } else {
+                        $.messager.alert("提示信息", data.msg, "error");
+                    }
+				}
+			}
+		});
+	}
+	
+	function searchPageData(){
+		$("#display-data-table").datagrid('load', {
+			'deviceTypeName': $("#device-type-name-key").textbox('getValue'),
+			'deviceTypeCode': $("#device-type-code-key").textbox('getValue'),
+			'deviceCategory':queryType,
+		});
+	}
+
+
+
+
+</script>
+</body>
+</html>

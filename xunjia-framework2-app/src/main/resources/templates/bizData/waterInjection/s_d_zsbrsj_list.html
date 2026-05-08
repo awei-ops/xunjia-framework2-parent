@@ -1,0 +1,133 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" xmlns:xunjia="http://www.thymeleaf.org">
+
+<head>
+    <div th:replace="framework/include/head::head"></div>
+    <script type="text/javascript" src="/global/js/ten-factory-formatter.js"></script>
+</head>
+
+<body>
+    <div class="easyui-layout" fit="true">
+        <div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+            <a>所属站：</a>
+            <select class="easyui-combobox" id="query-stations" data-options="
+                url:'/dmgc_s_zsz/getAll',
+                width: 150,
+                textField: 'mc',
+                valueField: 'eventId',
+                editable: true,
+                loadFilter : function (data) {
+                  if (data) {
+                      data.splice(0, 0, {mc: '全部', eventId: ''});
+                  }
+                  return data;
+              },
+            ">
+            </select>
+            <input id="query-startDate-key" class="easyui-datebox" editable="false" value="true"
+                data-options="width:240,label:'生产日期：' ,labelAlign:'right',labelWidth:90" />
+            <!-- <input id="query-endDate-key" class="easyui-datebox" editable="false" value="true"
+                data-options="width:240,label:'结束时间：' ,labelAlign:'right',labelWidth:90" /> -->
+            <a href="javascript:" onclick="searchPageData();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+            <a href="javascript:" onclick="importData();" class="easyui-linkbutton"
+                iconCls="fa fa-cloud-upload">同步数据</a>
+            <a href="javascript:" onclick="exportData();" class="easyui-linkbutton"
+                iconCls="fa fa-cloud-download">导出</a>
+        </div>
+        <div data-options="region:'center'">
+            <table id="display-data-table"></table>
+            <div id="user-operation-bar" class="datagrid-toolbar">
+                <xunjia:button th:menu-id="${menuId}" perm-code="dmgc_s_d_zsbrsj:export" />
+            </div>
+        </div>
+    </div>
+
+    <script th:inline="none">
+        $(function () {
+            $("#display-data-table").datagrid({
+                url: '/dmgc_s_d_zsbrsj/getPageData',
+                fit: true,
+                fitColumns: false,
+                striped: true,
+                loadMsg: '数据加载中，请稍候...',
+                pagination: true,
+                pageSize: 20,
+                rownumbers: true,
+                toolbar: "#user-operation-bar",
+                queryParams: {
+                    'startDate': $("#query-startDate-key").datebox('getValue'),
+                    'endDate': $("#query-startDate-key").datebox('getValue'),
+                },
+                columns: [[
+                    // { "field": "jbEventId", "title": "机泵ID", "width": 110 },
+                    { "field": "rq", "title": "日期", "width": 110 },
+                    { "field": "zszName", "title": "所属站", "width": 110 },
+                    { "field": "bbh", "title": "站内编号", "width": 110 },
+                    { "field": "yxzt", "title": "运行状态", "width": 110, formatter: equipmentRunFormatter },
+                    { "field": "bgg", "title": "泵规格", "width": 110 },
+                    { "field": "lsszlx", "title": "来水水质类型", "width": 110 },
+                    { "field": "bckyl", "title": "泵出口压力(MPa)", "width": 110 },
+                    { "field": "brkyl", "title": "泵入口压力(MPa)", "width": 110 },
+                    { "field": "bsl", "title": "泵水量m³", "width": 110 },
+                    { "field": "yxss", "title": "运行时数(h)", "width": 110 },
+                    { "field": "jksw", "title": "进口水温(℃)", "width": 110 },
+                    { "field": "cksw", "title": "出口水温(℃)", "width": 110 },
+                    { "field": "glys", "title": "功率因数(cosφ)", "width": 110 },
+                    { "field": "bsshgmc", "title": "泵所属汇管名称", "width": 110 },
+                    { "field": "bsshgyl", "title": "泵所属汇管压力(MPa)", "width": 130 },
+                    { "field": "bssgxmc", "title": "泵所属干线名称", "width": 110 },
+                    { "field": "bssgxyl", "title": "泵所属干线压力(MPa)", "width": 130 },
+                    { "field": "djqzwwd", "title": "电机前轴瓦温度(℃)", "width": 110 },
+                    { "field": "djhzwwd", "title": "电机后轴瓦温度(℃)", "width": 110 },
+                    { "field": "djdzwd", "title": "电机定子温度", "width": 110 },
+                    { "field": "wc", "title": "温差(℃)", "width": 110 },
+                    { "field": "gxyl", "title": "管线压力(MPa)", "width": 110 },
+                    { "field": "bgyc", "title": "泵管压差", "width": 110 },
+                    { "field": "ll", "title": "流量(M³/h)", "width": 110 },
+                    { "field": "dl", "title": "电流(A)", "width": 110 },
+                    { "field": "dy", "title": "电压(V)", "width": 110 },
+                    { "field": "rydl", "title": "用电量(kWh)", "width": 110 },
+                    { "field": "bx", "title": "泵效(%)", "width": 110 },
+                    { "field": "bsdh", "title": "泵水单耗(kWh/m³)", "width": 110 },
+                    { "field": "ryxzrl", "title": "影响注水量(M³)", "width": 110 },
+                    { "field": "yxys", "title": "影响因素", "width": 110 },
+                    // { "field": "ssdwdm", "title": "所属单位代码", "width": 110 },
+                    { "field": "dswcxzz", "title": "等熵温差修正值", "width": 110 },
+                    // { "field": "sszkEventId", "title": "所属站库id", "width": 250 }
+                    { "field": "bz", "title": "备注", "width": 110 },
+                ]]
+            });
+        });
+
+        function searchPageData() {
+            $("#display-data-table").datagrid('load', {
+                'zszName': $('#query-stations').combobox('getText') === '全部' ? '' : $('#query-stations').combobox('getText'),
+                'startDate': $("#query-startDate-key").datebox('getValue'),
+                'endDate': $("#query-startDate-key").datebox('getValue'),
+            });
+        }
+
+        function exportData() {
+            window.open("/dmgc_s_d_zsbrsj/exportData?startDate=" +
+                $("#query-startDate-key").datebox('getValue') +
+                "&endDate=" +
+                $("#query-startDate-key").datebox('getValue'));
+        }
+
+        function importData() {
+            $.ajax({
+                type: "get",
+                url: "http://11.11.111.226:8099/dmgc_s_d_zsbrsj_sync/getA5_Data",
+                data: {
+                    startTime: $('#query-startDate-key').datebox('getValue'),
+                    endTime: $('#query-startDate-key').datebox('getValue'),
+                },
+                success: function (response) {
+                    searchPageData();
+                }
+            })
+        }
+    </script>
+</body>
+
+</html>

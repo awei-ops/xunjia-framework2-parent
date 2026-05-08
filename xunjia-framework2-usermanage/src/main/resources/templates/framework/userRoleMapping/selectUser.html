@@ -1,0 +1,92 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:bf="http://www.thymeleaf.org">
+	
+<body>
+	<div class="easyui-layout" fit="true">
+		<div data-options="region:'west',width:210">
+			<div id="select-user-org-tree" class="easyui-tree" data-options="
+				url: '/org/getEnableOrgTree',
+				animate: true,
+				onClick: selectUserOrgClicked
+			"></div>
+		</div>
+		<div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+			<input id="urm-select-user-usernameKey" class="easyui-textbox" data-options="width:240,label:'用户名：' ,labelAlign:'right',labelWidth:70" />
+			<input id="urm-select-user-realNameKey" class="easyui-textbox" data-options="width:240,label:'姓名首拼：' ,labelAlign:'right',labelWidth:70" />
+			<a href="javascript:" onclick="selectSearchUser();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+		</div>
+		<div data-options="region:'center'">
+			<table id="urm-select-user-table"></table>
+		</div>
+	</div>
+	<script th:inline="none">
+	$(function(){
+		$("#urm-select-user-table").datagrid({
+			url: '/user/findUsers?enable=1',
+			idField: 'id',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: true,
+			pageSize: 20,
+			rownumbers: true,
+			columns: [[
+				{
+					field: 'id',
+					checkbox: true
+				}, {
+					field: 'realName',
+					title: '姓名',
+					width: 60
+				}, {
+					field: 'username',
+					title: '用户名',
+					width: 70
+				}, {
+					field: 'org',
+					title: '所属组织',
+					width: 80,
+					formatter: function(value, row, index){
+						return value == null ? "" : value.name;
+					}
+				}, {
+					field: 'staffCode',
+					title: '员工号',
+					width: 80
+				}, {
+					field: 'email',
+					title: '电子邮箱',
+					width: 80
+				}, {
+					field: 'phone',
+					title: '联系电话',
+					width: 80
+				}, {
+					field: 'idCard',
+					title: '身份证',
+					width: 80
+				}
+			]]
+		});
+	});
+	
+	function selectUserOrgClicked(node){
+		$("#select-user-org-tree").tree("toggle", node.target);
+		selectSearchUser();
+	}
+		
+	function selectSearchUser(){
+		var selectedNode = $("#select-user-org-tree").tree("getSelected"); 
+		$("#urm-select-user-table").datagrid('load', {
+			'username': $("#urm-select-user-usernameKey").textbox('getValue'),
+			'realNamePyCode': $("#urm-select-user-realNameKey").textbox('getValue'),
+			'orgId': selectedNode == null ? '' : selectedNode.id
+		});
+	}
+	
+	</script>
+</body>
+</html>

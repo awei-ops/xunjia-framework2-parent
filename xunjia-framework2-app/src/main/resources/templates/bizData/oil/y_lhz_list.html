@@ -1,0 +1,63 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" xmlns:xunjia="http://www.thymeleaf.org">
+
+<head>
+	<div th:replace="framework/include/head::head"></div>
+</head>
+
+<body>
+	<div class="easyui-layout" fit="true">
+		<div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+			<input id="query-mc-key" class="easyui-textbox"
+				data-options="width:240,label:'名称：' ,labelAlign:'right',labelWidth:90" />
+			<input id="query-code-key" class="easyui-textbox"
+				data-options="width:240,label:'编码：' ,labelAlign:'right',labelWidth:90" />
+			<a href="javascript:" onclick="searchPageData();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+		</div>
+		<div data-options="region:'center'">
+			<table id="display-data-table"></table>
+		</div>
+	</div>
+
+	<script th:inline="none">
+		$(function () {
+			$("#display-data-table").datagrid({
+				url: '/dmgc_y_lhz/getPageData',
+				fit: true,
+				fitColumns: false,
+				striped: true,
+				loadMsg: '数据加载中，请稍候...',
+				pagination: true,
+				pageSize: 20,
+				rownumbers: true,
+				columns: [[
+					{ "field": "mc", "title": "名称", "width": 110 },
+					{ "field": "bhcldy", "title": "包含处理单元", "width": 110 },
+					{ "field": "tcrq", "title": "投产日期", "width": 110 },
+					{ "field": "zdmj", "title": "占地面积", "width": 110 },
+					{ "field": "sfjzjk", "title": "是否集中监控", "width": 110 }
+					, { "field": "jzmj", "title": "总建筑面积", "width": 110 },
+					{ "field": "ygrs", "title": "用工人数", "width": 110 },
+					{ "field": "sfbf", "title": "运行状态", "width": 110 },
+					{ "field": "zbhj", "title": "周边环境", "width": 110 },
+					{ "field": "bfrq", "title": "报废日期", "width": 110 },
+					{ "field": "dlwz", "title": "地理位置", "width": 110 },
+					{ "field": "bz", "title": "备注", "width": 110 },
+					{ "field": "ssdwdm", "title": "所属单位代码", "width": 110 },
+					{ "field": "code", "title": "编码", "width": 110 }
+				]]
+			});
+		});
+
+		function searchPageData() {
+			$("#display-data-table").datagrid('load', {
+				'mc': $("#query-mc-key").textbox('getValue'),
+				'code': $("#query-code-key").textbox('getValue'),
+			});
+		}
+
+
+	</script>
+</body>
+
+</html>

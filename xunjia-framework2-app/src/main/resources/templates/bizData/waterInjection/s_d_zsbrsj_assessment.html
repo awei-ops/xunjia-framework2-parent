@@ -1,0 +1,626 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" xmlns:xunjia="http://www.thymeleaf.org">
+
+<head>
+    <div th:replace="framework/include/head::head"></div>
+    <script type="text/javascript" src="/global/js/echarts/echarts.min.js"></script>
+    <script type="text/javascript" src="/global/js/ten-factory-formatter.js"></script>
+</head>
+
+<body>
+    <div class="easyui-layout" fit="true">
+        <div data-options="region:'north',height:400" style="padding:10px 8px 10px 8px;overflow:hidden;">
+            <a>所属站：</a>
+            <select class="easyui-combobox" id="query-stations" data-options="
+                url:'/dmgc_s_zsz/getAll',
+                width: 150,
+                textField: 'mc',
+                valueField: 'eventId',
+                editable: true,
+                loadFilter : function (data) {
+                  if (data) {
+                      data.splice(0, 0, {mc: '全部', eventId: ''});
+                  }
+                  return data;
+              },
+            ">
+            </select>
+            <span>机泵评价：</span>
+            <select class="easyui-combobox" id="evaluate" data-options="
+						width: 150,
+						textField: 'label',
+						valueField: 'value',
+                        editable: false,
+                        data: [{
+                            label: '全部',
+                            value: ''
+                        },{
+                            label: '合格',
+                            value: '合格'
+                        },{
+                            label: '不合格',
+                            value: '不合格'
+                        }]
+					">
+            </select>
+            <input id="query-znbh-key" class="easyui-textbox"
+                data-options="width:240,label:'站内编号：' ,labelAlign:'right',labelWidth:90" />
+            <input id="query-assessmentDate-key" class="easyui-datebox" editable="false" value="true"
+                data-options="width:240,label:'考核时间：' ,labelAlign:'right',labelWidth:90" />
+            <a href="javascript:" onclick="searchPageData();" class="easyui-linkbutton"
+                iconCls="fa fa-calculator">查询</a>
+            <a href="javascript:" onclick="auditData();" class="easyui-linkbutton" iconCls="fa fa-paper-plane">审核计算</a>
+            <a href="javascript:" onclick="chart('dyehd');" class="easyui-linkbutton" iconCls="fa fa-line-chart">雷达图</a>
+            <a href="javascript:" onclick="getLine('绩效');" class="easyui-linkbutton" iconCls="fa fa-line-chart">绩效曲线</a>
+            <a href="javascript:" onclick="getLine('泵效');" class="easyui-linkbutton" iconCls="fa fa-line-chart">泵效曲线</a>
+            <a href="javascript:" onclick="exportExamineData();" class="easyui-linkbutton"
+                iconCls="fa fa-cloud-download">导出</a>
+            <br />
+            <div style="margin-top:10px;">
+                <div id='zero' style='width:33%;height:185px;float: left;'></div>
+                <div id='first' style='width:33%;height:185px;float: left;'></div>
+                <div id='second' style='width:33%;height:185px;float: left;'></div>
+            </div>
+            <div>
+                <div id='third' style='width:33%;height:185px;float: left;'></div>
+                <div id='four' style='width:33%;height:185px;float: left;'></div>
+                <div id='five' style='width:33%;height:185px;float: left;'></div>
+            </div>
+        </div>
+        <div data-options="region:'center'">
+            <table id="display-data-table"></table>
+            <div id="user-operation-bar" class="datagrid-toolbar">
+                <xunjia:button th:menu-id="${menuId}" perm-code="dmgc_s_d_zszrsj:export" />
+            </div>
+        </div>
+    </div>
+
+    <script th:inline="none">
+        var myChart0 = echarts.init(document.getElementById('zero'));
+        var myChart1 = echarts.init(document.getElementById('first'));
+        var myChart2 = echarts.init(document.getElementById('second'));
+        var myChart3 = echarts.init(document.getElementById('third'));
+        var myChart4 = echarts.init(document.getElementById('four'));
+        var myChart5 = echarts.init(document.getElementById('five'));
+        $(function () {
+            getStaticDatas();
+            $("#display-data-table").datagrid({
+                url: '/dmgc_s_d_zsbrsj/getAssessment',
+                fit: true,
+                idField: 'eventId',
+                fitColumns: false,
+                striped: true,
+                loadMsg: '数据加载中，请稍候...',
+                pagination: true,
+                pageSize: 20,
+                rownumbers: true,
+                onClickCell: onClickCell,
+                onAfterEdit: onAfterEdit,
+                singleSelect: 'true',
+                queryParams: {
+                    cycle: '日',
+                    assessmentDate: $('#query-assessmentDate-key').datebox('getValue'),
+                },
+                toolbar: "#user-operation-bar",
+                rowStyler: setBackGround,
+                columns: [[
+                    { "field": 'eventId', "checkbox": true, "width": 50 },
+                    { "field": "rq", "title": "日期", "width": 110 },
+                    { "field": "zszName", "title": "注水站名称", "width": 110 },
+                    { "field": "jbName", "title": "泵名称", "width": 110 },
+                    { "field": "bbh", "title": "站内编号", "width": 110 },
+                    {
+                        "field": "yxzt", "title": "运行状态", "width": 110, styler: flagColor, formatter: equipmentRunFormatter,
+                        // editor: {
+                        //     type: 'textbox'
+                        // }
+                        editor: {
+                            type: 'combobox',
+                            options: {
+                                textField: 'label',
+                                valueField: 'value',
+                                // panelHeight: 'auto',
+                                data: [{
+                                    label: '运行',
+                                    value: '01'
+                                }, {
+                                    label: '备用',
+                                    value: '02'
+                                }, {
+                                    label: '检修',
+                                    value: '03'
+                                }, {
+                                    label: '报废',
+                                    value: '04'
+                                }]
+                            }
+                        }
+                    },
+                    {
+                        "field": "bx", "title": "泵效(%)", "width": 110, styler: flagColor,
+                        editor: {
+                            type: 'numberbox',
+                            options: { precision: 2 }
+                        }
+                    },
+                    { "field": "bxScore", "title": "泵效得分", "width": 110 },
+                    { "field": "weightBx", "title": "泵效权重", "width": 110 },
+                    { "field": "weightBxScore", "title": "泵效权重得分" },
+                    { "field": "bxpj", "title": "泵效评价", "width": 110 },
+                    {
+                        "field": "bckyl", "title": "泵出口压力(MPa)", "width": 110, styler: flagColor,
+                        editor: {
+                            type: 'numberbox',
+                            options: { precision: 2 }
+                        }
+                    },
+                    {
+                        "field": "bsshgyl", "title": "泵所属汇管压力(MPa)", "width": 110, styler: flagColor,
+                        editor: {
+                            type: 'numberbox',
+                            options: { precision: 2 }
+                        }
+                    },
+                    { "field": "jlssl", "title": "节流损失率(%)", "width": 110 },
+                    { "field": "jlsslScore", "title": "节流损失率得分", "width": 110 },
+                    { "field": "weightJlssl", "title": "节流损失率权重", "width": 110 },
+                    { "field": "weightJlsslScore", "title": "节流损失率权重得分", "width": 110 },
+                    { "field": "jlsslpj", "title": "节流损失率评价", "width": 110 },
+                    {
+                        "field": "ll", "title": "流量(M3/h)", "width": 110, styler: flagColor,
+                        editor: {
+                            type: 'numberbox',
+                            options: { precision: 2 }
+                        }
+                    },
+                    {
+                        "field": "hll", "title": "回流量", "width": 110, styler: flagColor,
+                        editor: {
+                            type: 'numberbox',
+                            options: { precision: 2 }
+                        }
+                    },
+                    { "field": "hlRate", "title": "回流损失率(%)", "width": 110 },
+                    { "field": "hlRateScore", "title": "回流损失率得分", "width": 110 },
+                    { "field": "weightHlRate", "title": "回流损失率权重", "width": 110 },
+                    { "field": "weightHlRateScore", "title": "回流损失率权重得分", "width": 110 },
+                    { "field": "hlRatepj", "title": "回流损失率评价", "width": 110 },
+                    { "field": "fhl", "title": "负荷率(%)", "width": 110 },
+                    { "field": "fhlScore", "title": "负荷率得分", "width": 110 },
+                    { "field": "weightFhl", "title": "负荷率权重", "width": 110 },
+                    { "field": "weightFhlScore", "title": "负荷率权重得分", "width": 110 },
+                    { "field": "fhlpj", "title": "负荷率评价", "width": 110 },
+                    { "field": "bgg", "title": "泵规格", "width": 110 },
+                    { "field": "lsszlx", "title": "来水水质类型", "width": 110 },
+                    { "field": "brkyl", "title": "泵入口压力(MPa)", "width": 110 },
+                    { "field": "bsl", "title": "泵水量", "width": 110 },
+                    { "field": "yxss", "title": "运行时数(h)", "width": 110 },
+                    { "field": "jksw", "title": "进口水温(℃)", "width": 110 },
+                    { "field": "cksw", "title": "出口水温(℃)", "width": 110 },
+                    { "field": "glys", "title": "功率因数(cosφ)", "width": 110 },
+                    { "field": "bsshgmc", "title": "泵所属汇管名称", "width": 110 },
+                    { "field": "bssgxmc", "title": "泵所属干线名称", "width": 110 },
+                    { "field": "bssgxyl", "title": "泵所属干线压力(MPa)", "width": 110 },
+                    { "field": "djqzwwd", "title": "电机前轴瓦温度(℃)", "width": 110 },
+                    { "field": "djhzwwd", "title": "电机后轴瓦温度(℃)", "width": 110 },
+                    { "field": "djdzwd", "title": "电机定子温度", "width": 110 },
+                    { "field": "wc", "title": "温差(℃)", "width": 110 },
+                    { "field": "gxyl", "title": "管线压力(MPa)", "width": 110 },
+                    { "field": "bgyc", "title": "泵管压差", "width": 110 },
+                    { "field": "dl", "title": "电流(A)", "width": 110 },
+                    { "field": "dy", "title": "电压电压(V)", "width": 110 },
+                    { "field": "rydl", "title": "用电量(kWh)", "width": 110 },
+                    { "field": "bsdh", "title": "泵水单耗(kWh/m3)", "width": 110 },
+                    { "field": "ryxzrl", "title": "影响注水量(M3)", "width": 110 },
+                    { "field": "yxys", "title": "影响因素", "width": 110 },
+                    // { "field": "ssdwdm", "title": "所属单位代码", "width": 110 },
+                    { "field": "dswcxzz", "title": "等熵温差修正值" },
+                    { "field": "jbScore", "title": "机泵得分", "width": 110 },
+                    { "field": "jbpj", "title": "机泵评价", "width": 110 },
+                    { "field": "bz", "title": "备注", "width": 110 },
+                ]]
+            });
+        });
+
+        function searchPageData() {
+            $("#display-data-table").datagrid('load', {
+                cycle: '日',
+                assessmentDate: $("#query-assessmentDate-key").datebox('getValue'),
+                zszName: $('#query-stations').combobox('getText') === '全部' ? '' : $('#query-stations').combobox('getText'),
+                bbh: $("#query-znbh-key").textbox('getValue'),
+                jbpj: $("#evaluate").combobox('getValue'),
+            });
+            getStaticDatas();
+        }
+
+        function getLine(type) {
+            var selectedRows = $("#display-data-table").datagrid("getSelections");
+            if (selectedRows == null || selectedRows.length == 0) {
+                $.messager.alert("提示信息", "您未选择要查看的记录。", "warning");
+            } else if (selectedRows.length > 1) {
+                $.messager.alert("提示信息", "您只能选择一条记录进行查看。", "warning");
+            } else {
+                var editDialog = $("<div></div>").dialog({
+                    title: '统计信息',
+                    width: 1400,
+                    height: 600,
+                    modal: true,
+                    iconCls: "fa fa-pencil-square-o",
+                    href: '/dmgc_s_d_zsbrsj/toLineChart',
+                    onClose: function () {
+                        $(this).dialog('destroy');
+                    },
+                    onLoad: function () {
+                        $("#type-key").val(type);
+                        $("#jbId-key").val(selectedRows[0].jbEventId);
+                    },
+                    buttons: [
+                        {
+                            text: '关闭',
+                            iconCls: 'fa fa-close',
+                            handler: function () {
+                                editDialog.dialog('destroy');
+                            }
+                        }
+                    ]
+                });
+            }
+        }
+
+        function setPipe(initedChart, response) {
+            var myOption = {
+                title: {
+                    left: 'center',
+                    text: response.title
+                },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: "{a} <br/>{b}: {c} ({d}%)"//模板变量有 {a}、{b}、{c}、{d}，分别表示系列名，数据名，数据值，百分比
+                },
+                legend: {
+                    orient: 'vertical',
+                    left: 'right',
+                },
+                series: [{
+                    name: response.title,
+                    type: 'pie',
+                    radius: '50%',
+                    labelLine: {
+                        show: true
+                    },
+                    label: {
+                        formatter: '{b}: {c} ({d}%)',//模板变量有 {a}、{b}、{c}、{d}，分别表示系列名，数据名，数据值，百分比
+                    },
+                    data: response.series,
+                    emphasis: {
+                        itemStyle: {
+                            shadowBlur: 10,
+                            shadowOffsetX: 0,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                        }
+                    }
+                }
+                ]
+            }
+            initedChart.setOption(myOption);
+        }
+
+        function getStaticDatas() {
+            $.ajax({
+                url: '/dmgc_s_d_zsbrsj/getAllStaticsOfPipe',
+                data: {
+                    'rq': $('#query-assessmentDate-key').datebox('getValue')
+                },
+                type: 'get',
+                dataType: 'json',
+                success: function (response) {
+                    setPipe(myChart0, response[0]);
+                    setPipe(myChart1, response[1]);
+                    setPipe(myChart2, response[2]);
+                    setPipe(myChart3, response[3]);
+                    setPipe(myChart4, response[4]);
+                    setPipe(myChart5, response[5]);
+                }
+            });
+        }
+
+        function chart(type) {
+            var selectedRows = $("#display-data-table").datagrid("getSelections");
+            if (selectedRows == null || selectedRows.length == 0) {
+                $.messager.alert("提示信息", "您未选择要查看的记录。", "warning");
+            } else if (selectedRows.length > 1) {
+                $.messager.alert("提示信息", "您只能选择一条记录进行查看。", "warning");
+            } else {
+                var editDialog = $("<div></div>").dialog({
+                    title: '统计信息',
+                    width: 1400,
+                    height: 550,
+                    modal: true,
+                    iconCls: "fa fa-pencil-square-o",
+                    href: '/dmgc_s_d_zsbrsj/toChart',
+                    onClose: function () {
+                        $(this).dialog('destroy');
+                    },
+                    onLoad: function () {
+                        var assessmentDate = $('#query-assessmentDate-key').datebox('getValue');
+                        var rowData = selectedRows[0];
+                        var myChart = echarts.init(document.getElementById('firstRadar'));
+                        var legendName = rowData.zszName + rowData.jbName + rowData.bbh;
+                        var myData = [rowData.bxScore, rowData.jlsslScore, rowData.hlRateScore, rowData.fhlScore];
+
+                        $("#measures-originalDataDate").val(assessmentDate);
+                        $("#measures-zid").val(null);
+                        $("#measures-zmc").val(rowData.zszName);
+                        $("#measures-equipmentId").val(rowData.jbEventId);
+                        $("#measures-equipmentName").val(rowData.jbName);
+
+                        $.ajax({
+                            url: '/energySavingMeasures/getByParam',
+                            data: { queryDate: assessmentDate, equipmentId: rowData.jbEventId },
+                            type: 'get',
+                            dataType: 'json',
+                            success: function (data) {
+                                if (data !== null) {
+                                    $("#measures-id").val(data.id);
+                                    $("#measures").textbox('setValue', data.measures);
+                                }
+                            }
+                        });
+
+                        var option = {
+                            title: {
+                                text: legendName + '雷达'
+                            },
+                            radar: {
+                                shape: 'circle',
+                                axisLabel: {
+                                    show: true,
+                                    showMaxLabel: true, //显示最大值，即外圈显示数字
+                                    showMinLabel: true, //显示最小数字，即中心点显示0
+                                },
+                                indicator: [
+                                    { name: '泵机组效率', max: 100 },
+                                    { name: '节流损失率', max: 100 },
+                                    { name: '回流损失率', max: 100 },
+                                    { name: '负荷率', max: 100 }
+                                ]
+                            },
+                            series: [
+                                {
+                                    name: '注水泵',
+                                    type: 'radar',
+                                    areaStyle: {},
+                                    label: { show: true },
+                                    data: [
+                                        {
+                                            value: myData,
+                                            name: legendName
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                        myChart.setOption(option);
+                    },
+                    buttons: [
+                        {
+                            text: '保存',
+                            iconCls: 'fa fa-save',
+                            handler: function () {
+                                var myId = $("#measures-id").val();
+                                if (myId == null || myId == undefined || myId == "") {
+                                    submitDataForm("edit-form", editDialog, "/energySavingMeasures/save");
+                                }
+                                else {
+                                    submitDataForm("edit-form", editDialog, "/energySavingMeasures/update");
+                                }
+                            }
+                        },
+                        {
+                            text: '删除',
+                            iconCls: 'fa fa-remove',
+                            handler: function () {
+                                $.messager.confirm('删除确认', '您是否确认要删除当前的整改建议？', function (r) {
+                                    if (r) {
+                                        var ids = new Array();
+                                        let measuresId = $("#measures-id").val();
+                                        if (measuresId != "") {
+                                            ids.push(measuresId);
+                                            $.ajax({
+                                                url: '/energySavingMeasures/delete',
+                                                data: { "ids[]": ids },
+                                                type: 'post',
+                                                dataType: 'json',
+                                                success: function (data) {
+                                                    if (data.result) {
+                                                        $("#measures").textbox('setValue', "");
+                                                        // editDialog.dialog('destroy');
+                                                    } else {
+                                                        $.messager.alert("提示信息", data.msg, "error");
+                                                    }
+                                                }
+                                            });
+                                        } else {
+                                            $("#measures").textbox('setValue', "");
+                                        }
+                                    }
+                                });
+                            }
+                        },
+                        {
+                            text: '关闭',
+                            iconCls: 'fa fa-close',
+                            handler: function () {
+                                editDialog.dialog('destroy');
+                            }
+                        }
+                    ]
+                });
+            }
+        }
+
+
+        function flagColor(val, row, index) {
+            if (!row.dataAlreadyAudited || row.dataAlreadyAudited == null) {
+                return 'background:#FFFACD';
+            }
+        }
+
+        function submitDataForm(formId, dialog, url) {
+            var validate;
+            $("#" + formId).form('submit', {
+                url: url,
+                onSubmit: function () {
+                    validate = $(this).form("validate");
+                    return validate;
+                },
+                success: function (data) {
+                    if (validate) {
+                        data = $.parseJSON(data);
+                        if (data.result) {
+                            dialog.dialog("destroy");
+                            $.messager.show({ title: '提示信息', msg: data.msg, timeout: 5000, showType: 'show' });
+                        } else {
+                            $.messager.alert("提示信息", data.msg, "error");
+                        }
+                    }
+                }
+            });
+        }
+
+        function flagColor(val, row, index) {
+            // if (!row.dataAlreadyAudited || row.dataAlreadyAudited == null) {
+            return 'background:#FFFACD';
+            // }
+        }
+
+        var editIndex = undefined;
+        function endEditing() {//该方法用于关闭上一个焦点的editing状态
+            if (editIndex == undefined) {
+                return true
+            }
+            if ($('#display-data-table').datagrid('validateRow', editIndex)) {
+                $('#display-data-table').datagrid('endEdit', editIndex);
+                editIndex = undefined;
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+
+        function onClickCell(index, field, value) {
+            if (endEditing()) {
+                if (field == "yxzt" || field == "bx" || field == "bckyl" || field == "bsshgyl" || field == "ll" || field == "hll") {
+                    var row = $('#display-data-table').datagrid('getRows')[index];
+                    // if (!row.dataAlreadyAudited || row.dataAlreadyAudited == null) {
+                    $(this).datagrid('beginEdit', index);
+                    var ed = $(this).datagrid('getEditor', { index: index, field: field });
+                    $(ed.target).focus();
+                    // }
+                }
+                editIndex = index;
+            }
+        }
+
+        //单元格失去焦点执行的方法
+        function onAfterEdit(index, row, changes) {
+            var updated = $('#display-data-table').datagrid('getChanges', 'updated');
+            if (updated.length < 1) {
+                editRow = undefined;
+                $('#display-data-table').datagrid('unselectAll');
+                return;
+            } else {
+                submitHll(index, row, changes);
+            }
+        }
+
+        //提交数据
+        function submitHll(index, row, changes) {
+            $.ajax({
+                type: "get",
+                async: false,
+                url: "/dmgc_s_d_zsbrsj/saveHll",
+                data: {
+                    id: row.eventId,
+                    yxzt: row.yxzt,
+                    bx: row.bx,
+                    bckyl: row.bckyl,
+                    bsshgyl: row.bsshgyl,
+                    ll: row.ll,
+                    hll: row.hll,
+                }
+            })
+        }
+
+        function auditData() {
+            $.ajax({
+                type: "get",
+                async: false,
+                url: "/dmgc_s_d_zsbrsj/auditData",
+                data: {
+                    "rq": $('#query-assessmentDate-key').datebox('getValue')
+                },
+                success: function (response) {
+                    $('#display-data-table').datagrid('reload');
+                    getStaticDatas();
+                    getIfSomeDataNotInput();
+                }
+            })
+        }
+
+        function getIfSomeDataNotInput() {
+            $.ajax({
+                type: "get",
+                async: false,
+                url: "/dmgc_s_d_zsbrsj/getIfSomeDataNotInput",
+                data: {
+                    "rq": $('#query-assessmentDate-key').datebox('getValue')
+                },
+                success: function (response) {
+                    if (response) {
+                        $.messager.alert("提示信息", "尚有在运行的数据未录入，会影响所属站得分", "error");
+                    }
+                }
+            })
+        }
+
+        function exportExamineData() {
+            window.open("/dmgc_s_d_zsbrsj/exportExamineData?queryDate=" +
+                $("#query-assessmentDate-key").datebox('getValue'));
+        }
+
+        function setBackGround(index, row) {
+            if (row.yxzt == "01") {
+                let count = 0;
+                if (row.jbpj === '不合格' || row.jbpj === '' || row.jbpj === null) {
+                    count++;
+                }
+                if (row.fhlpj === '不合格' || row.fhlpj === '' || row.fhlpj === null) {
+                    count++;
+                }
+                if (row.jlsslpj === '不合格' || row.jlsslpj === '' || row.jlsslpj === null) {
+                    count++;
+                }
+                if (row.bxpj === '不合格' || row.bxpj === '' || row.bxpj === null) {
+                    count++;
+                }
+                if (row.hlRatepj === '不合格' || row.hlRatepj === '' || row.hlRatepj === null) {
+                    count++;
+                }
+                if (count === 0) {
+                    return 'background-color:#C1FFC1;font-weight:bold;';
+                }
+                if (count == 1) {
+                    return 'background-color:#FFC0CB;font-weight:bold;';
+                }
+                if (count > 1) {
+                    return 'background-color:#FF6A6A;font-weight:bold;';
+                }
+            }
+        }
+
+    </script>
+</body>
+
+</html>

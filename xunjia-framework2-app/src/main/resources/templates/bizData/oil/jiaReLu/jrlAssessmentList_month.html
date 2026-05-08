@@ -1,0 +1,149 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" xmlns:xunjia="http://www.thymeleaf.org">
+
+<head>
+    <div th:replace="framework/include/head::head"></div>
+    <script type="text/javascript" src="/global/js/echarts/echarts.min.js"></script>
+</head>
+
+<body>
+    <div class="easyui-layout" fit="true">
+        <div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+            <span>考核时间：</span>
+            <select class="easyui-combobox" id="query-year" data-options="
+                url:'/commonControl/getYears',
+                width: 110,
+                textField: 'label',
+                valueField: 'value',
+                editable: false,
+            ">
+            </select>
+            <a>年</a>
+            <select class="easyui-combobox" id="query-month" data-options="
+                url:'/commonControl/getMonths',
+                width: 110,
+                textField: 'label',
+                valueField: 'value',
+                editable: false,
+            ">
+            </select>
+            <a>月</a>
+            <a href="javascript:" onclick="searchPageData();" class="easyui-linkbutton"
+                iconCls="fa fa-calculator">考核得分</a>
+        </div>
+        <div data-options="region:'center'">
+            <table id="display-data-table"></table>
+            <div id="user-operation-bar" class="datagrid-toolbar">
+                <xunjia:button th:menu-id="${menuId}" perm-code="dmgc_s_d_zszrsj:export" />
+            </div>
+        </div>
+    </div>
+
+    <script th:inline="none">
+        $(function () {
+            let date = new Date;
+            let year = date.getFullYear();
+            let month = date.getMonth() + 1;
+            month = (month < 10 ? "0" + month : month);
+            $('#query-year').combobox('setValue', year);
+            $('#query-month').combobox('setValue', month);
+            $("#display-data-table").datagrid({
+                url: '/dmgc_y_d_jrl/getAssessment',
+                fit: true,
+                idField: 'eventId',
+                fitColumns: false,
+                striped: true,
+                loadMsg: '数据加载中，请稍候...',
+                pagination: true,
+                pageSize: 20,
+                rownumbers: true,
+                singleSelect: 'true',
+                queryParams: {
+                    cycle: '月',
+                    assessmentDate: year + "-" + month + "-01",
+                },
+                toolbar: "#user-operation-bar",
+                rowStyler: setBackGround,
+                columns: [[
+                    { "field": 'jrlId', "checkbox": true, "width": 50 },
+                    {
+                        "field": "rq", "title": "日期", "width": 110, formatter: val => {
+                            let txt = val.substr(0, 7);
+                            return txt
+                        }
+                    },
+                    { "field": "sszkName", "title": "所属站名称", "width": 110 },
+                    { "field": "mc", "title": "设备名称", "width": 110 },
+                    { "field": "znbh", "title": "站内编号", "width": 110 },
+                    // { "field": "ssdwdm", "title": "所属单位", "width": 110 },
+                    // { "field": "weightLx", "title": "热效率权重", "width": 110 },
+                    { "field": "lxScore", "title": "热效率得分", "width": 110 },
+                    { "field": "weightLxScore", "title": "热效率权重得分", "width": 110 },
+                    { "field": "lxpj", "title": "热效率评价", "width": 110 },
+                    // { "field": "weightKqxs", "title": "空气系数权重", "width": 110 },
+                    { "field": "kqxsScore", "title": "空气系数得分", "width": 110 },
+                    { "field": "weightKqxsScore", "title": "空气系数权重得分", "width": 110 },
+                    { "field": "kqxspj", "title": "空气系数评价", "width": 110 },
+                    // { "field": "weightYqwd", "title": "排烟温度权重", "width": 110 },
+                    { "field": "yqwdScore", "title": "排烟温度得分", "width": 110 },
+                    { "field": "weightYqwdScore", "title": "排烟温度权重得分", "width": 110 },
+                    { "field": "yqwdpj", "title": "排烟温度评价", "width": 110 },
+                    // { "field": "rfh", "title": "热负荷", "width": 110 },
+                    // { "field": "weightRfh", "title": "热负荷率权重", "width": 110 },
+                    { "field": "rfhScore", "title": "热负荷率得分", "width": 110 },
+                    { "field": "weightRfhScore", "title": "热负荷率权重得分", "width": 110 },
+                    { "field": "rfhpj", "title": "热负荷率评价", "width": 110 },
+                    // { "field": "weightLtwbmwd", "title": "炉体外表面温度权重", "width": 110 },
+                    { "field": "ltwbmwdScore", "title": "炉体外表面温度得分", "width": 110 },
+                    { "field": "weightLtwbmwdScore", "title": "炉体外表面温度权重得分", "width": 110 },
+                    { "field": "ltwbmwdpj", "title": "炉体外表面温度评价", "width": 110 },
+                    { "field": "jxScore", "title": "加热炉总得分", "width": 110 },
+                    { "field": "jxpj", "title": "加热炉综合评价", "width": 110 }
+                ]]
+            });
+        });
+
+        function searchPageData() {
+            let year = $('#query-year').combobox('getValue');
+            let month = $('#query-month').combobox('getValue');
+            $("#display-data-table").datagrid('load', {
+                'cycle': '月',
+                'assessmentDate': year + "-" + month + "-01",
+            });
+        }
+
+        function setBackGround(index, row) {
+            let count = 0;
+            if (row.jxpj === '不合格' || row.jxpj === '' || row.jxpj === null) {
+                count++;
+            }
+            if (row.lxpj === '不合格' || row.lxpj === '' || row.lxpj === null) {
+                count++;
+            }
+            if (row.ltwbmwdpj === '不合格' || row.ltwbmwdpj === '' || row.ltwbmwdpj === null) {
+                count++;
+            }
+            if (row.kqxspj === '不合格' || row.kqxspj === '' || row.kqxspj === null) {
+                count++;
+            }
+            if (row.yqwdpj === '不合格' || row.yqwdpj === '' || row.yqwdpj === null) {
+                count++;
+            }
+            if (row.rfhpj === '不合格' || row.rfhpj === '' || row.rfhpj === null) {
+                count++;
+            }
+            if (count === 0) {
+                return 'background-color:#C1FFC1;font-weight:bold;';
+            }
+            if (count == 1) {
+                return 'background-color:#FFC0CB;font-weight:bold;';
+            }
+            if (count > 1) {
+                return 'background-color:#FF6A6A;font-weight:bold;';
+            }
+        }
+
+    </script>
+</body>
+
+</html>

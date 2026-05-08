@@ -1,0 +1,32 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:bf="http://www.thymeleaf.org">
+	
+
+<div class="table-container">
+	<form id="edit-dic-type-form" method="post">
+		<input type="hidden" id="dic-type-id" name="id" />
+		<table class="edit-table">
+			<tr>
+				<th>分类名称：</th>
+				<td>
+					<input class="easyui-textbox" id="dic-type-name" name="name" data-options="required:true,width:240" />
+				</td>
+			</tr>
+			<tr>
+				<th>分类编码：</th>
+				<td>
+					<input class="easyui-textbox" id="dic-type-code" name="code" data-options="required:true,width:240" />
+				</td>
+			</tr>
+			<tr>
+				<th>排序号：</th>
+				<td>
+					<input class="easyui-numberbox" id="dic-type-orderNo" name="orderNo" data-options="required:true,min:0,precision:0,width:240" value="1" />
+				</td>
+			</tr>
+		</table>
+	</form>
+</div>
+</html>

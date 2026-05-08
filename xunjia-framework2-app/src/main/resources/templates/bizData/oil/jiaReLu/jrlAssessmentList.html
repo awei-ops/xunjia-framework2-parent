@@ -1,0 +1,614 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" xmlns:xunjia="http://www.thymeleaf.org">
+
+<head>
+    <div th:replace="framework/include/head::head"></div>
+    <script type="text/javascript" src="/global/js/echarts/echarts.min.js"></script>
+    <script type="text/javascript" src="/global/js/ten-factory-formatter.js"></script>
+</head>
+
+<body>
+    <div class="easyui-layout" fit="true">
+        <div data-options="region:'north',height:400" style="padding:10px 8px 10px 8px;overflow:hidden;">
+            <a>所属站：</a>
+            <select class="easyui-combobox" id="query-stations" data-options="
+                url:'/dmgc_y_zyz/getAll',
+                width: 150,
+                textField: 'mc',
+                valueField: 'eventId',
+                editable: true,
+                loadFilter : function (data) {
+                  if (data) {
+                      data.splice(0, 0, {mc: '全部', eventId: ''});
+                  }
+                  return data;
+              },
+            ">
+            </select>
+            <span>炉评价：</span>
+            <select class="easyui-combobox" id="evaluate" data-options="
+						width: 150,
+						textField: 'label',
+						valueField: 'value',
+                        editable: false,
+                        data: [{
+                            label: '全部',
+                            value: ''
+                        },{
+                            label: '合格',
+                            value: '合格'
+                        },{
+                            label: '不合格',
+                            value: '不合格'
+                        }]
+					">
+            </select>
+            <input id="query-mc-key" class="easyui-textbox"
+                data-options="width:200,label:'名称：' ,labelAlign:'right',labelWidth:80" />
+            <input id="query-znbh-key" class="easyui-textbox"
+                data-options="width:200,label:'站内编号：' ,labelAlign:'right',labelWidth:80" />
+            <input id="query-assessmentDate-key" class="easyui-datebox" editable="false" value="true"
+                data-options="width:200,label:'考核时间：' ,labelAlign:'right',labelWidth:80" />
+            <a href="javascript:" onclick="searchPageData();" class="easyui-linkbutton"
+                iconCls="fa fa-calculator">查询</a>
+            <a href="javascript:" onclick="auditData();" class="easyui-linkbutton" iconCls="fa fa-paper-plane">审核计算</a>
+            <a href="javascript:" onclick="chart('dyehd');" class="easyui-linkbutton" iconCls="fa fa-line-chart">雷达图</a>
+            <a href="javascript:" onclick="getLine('绩效');" class="easyui-linkbutton" iconCls="fa fa-line-chart">绩效曲线</a>
+            <a href="javascript:" onclick="getLine('炉效');" class="easyui-linkbutton" iconCls="fa fa-line-chart">炉效曲线</a>
+            <a href="javascript:" onclick="exportExamineData();" class="easyui-linkbutton"
+                iconCls="fa fa-cloud-download">导出</a>
+            <br />
+            <div style="margin-top:10px;">
+                <div id='zero' style='width:33%;height:185px;float: left;'></div>
+                <div id='first' style='width:33%;height:185px;float: left;'></div>
+                <div id='second' style='width:33%;height:185px;float: left;'></div>
+
+            </div>
+            <div>
+                <div id='third' style='width:25%;height:185px;float: left;'></div>
+                <div id='four' style='width:25%;height:185px;float: left;'></div>
+                <div id='five' style='width:25%;height:185px;float: left;'></div>
+                <div id='six' style='width:25%;height:185px;float: left;'></div>
+            </div>
+        </div>
+        <div data-options="region:'center'">
+            <table id="display-data-table"></table>
+            <div id="user-operation-bar" class="datagrid-toolbar">
+                <xunjia:button th:menu-id="${menuId}" perm-code="dmgc_s_d_zszrsj:export" />
+            </div>
+        </div>
+    </div>
+
+    <script th:inline="none">
+        var myChart0 = echarts.init(document.getElementById('zero'));
+        var myChart1 = echarts.init(document.getElementById('first'));
+        var myChart2 = echarts.init(document.getElementById('second'));
+        var myChart3 = echarts.init(document.getElementById('third'));
+        var myChart4 = echarts.init(document.getElementById('four'));
+        var myChart5 = echarts.init(document.getElementById('five'));
+        var myChart6 = echarts.init(document.getElementById('six'));
+        $(function () {
+            getStaticDatas();
+            $("#display-data-table").datagrid({
+                url: '/dmgc_y_d_jrl/getAssessment',
+                fit: true,
+                idField: 'eventId',
+                fitColumns: false,
+                striped: true,
+                loadMsg: '数据加载中，请稍候...',
+                pagination: true,
+                pageSize: 20,
+                rownumbers: true,
+                onClickCell: onClickCell,
+                onAfterEdit: onAfterEdit,
+                singleSelect: 'true',
+                queryParams: {
+                    cycle: '日',
+                    assessmentDate: $('#query-assessmentDate-key').datebox('getValue'),
+                },
+                toolbar: "#user-operation-bar",
+                rowStyler: setBackGround,
+                columns: [[
+                    { "field": 'eventId', "checkbox": true, width: 50 },
+                    { "field": "rq", "title": "日期", width: 110 },
+                    { "field": "sszkName", "title": "站名称", width: 110 },
+                    { "field": "mc", "title": "设备名称", width: 110 },
+                    { "field": "znbh", "title": "站内编号", width: 110 },
+                    {
+                        "field": "jrlyxzk", "title": "加热炉运行状况", width: 110, styler: flagColor, formatter: equipmentRunFormatter,
+                        // editor: {
+                        //     type: 'textbox'
+                        // }
+                        editor: {
+                            type: 'combobox',
+                            options: {
+                                textField: 'label',
+                                valueField: 'value',
+                                // panelHeight: 'auto',
+                                data: [{
+                                    label: '运行',
+                                    value: '01'
+                                }, {
+                                    label: '备用',
+                                    value: '02'
+                                }, {
+                                    label: '检修',
+                                    value: '03'
+                                }, {
+                                    label: '报废',
+                                    value: '04'
+                                }]
+                            }
+                        }
+                    },
+                    {
+                        "field": "lx", "title": "炉效(%)", width: 110, styler: flagColor,
+                        editor: {
+                            type: 'numberbox',
+                            options: { precision: 2 }
+                        }
+                    },
+                    { "field": "lxScore", "title": "热效率得分", width: 110 },
+                    { "field": "weightLx", "title": "热效率权重", width: 110 },
+                    { "field": "weightLxScore", "title": "热效率权重得分", width: 110 },
+                    { "field": "lxpj", "title": "热效率评价", width: 110 },
+                    {
+                        "field": "yqwd", "title": "烟气温度(℃)", width: 110, styler: flagColor,
+                        editor: {
+                            type: 'numberbox',
+                            options: { precision: 0 }
+                        }
+                    },
+                    { "field": "yqwdScore", "title": "排烟温度得分", width: 110 },
+                    { "field": "weightYqwd", "title": "排烟温度权重", width: 110 },
+                    { "field": "weightYqwdScore", "title": "排烟温度权重得分", width: 110 },
+                    { "field": "yqwdpj", "title": "排烟温度评价", width: 110 },
+                    {
+                        "field": "yqhyl", "title": "烟气含氧量(%)", width: 110, styler: flagColor,
+                        editor: {
+                            type: 'numberbox',
+                            options: { precision: 2 }
+                        }
+                    },
+                    { "field": "kqxs", "title": "空气系数", width: 110 },
+                    { "field": "kqxsScore", "title": "空气系数得分", width: 110 },
+                    { "field": "weightKqxs", "title": "空气系数权重", width: 110 },
+                    { "field": "weightKqxsScore", "title": "空气系数权重得分" },
+                    { "field": "kqxspj", "title": "空气系数评价", width: 110 },
+                    {
+                        "field": "jrl", "title": "加热量(M3)", width: 110, styler: flagColor,
+                        editor: {
+                            type: 'numberbox',
+                            options: { precision: 0 }
+                        }
+                    },
+                    { "field": "rfh", "title": "热负荷", width: 110 },
+                    { "field": "rfhScore", "title": "热负荷率得分" },
+                    { "field": "weightRfh", "title": "热负荷率权重", width: 110 },
+                    { "field": "weightRfhScore", "title": "热负荷率权重得分", width: 110 },
+                    { "field": "rfhpj", "title": "热负荷率评价", width: 110 },
+                    {
+                        "field": "ltwbmwd", "title": "炉体外表面温度", styler: flagColor, width: 110,
+                        editor: {
+                            type: 'numberbox',
+                            options: { precision: 2 }
+                        }
+                    },
+                    { "field": "ltwbmwdScore", "title": "炉体外表面温度得分", width: 120 },
+                    { "field": "weightLtwbmwd", "title": "炉体外表面温度权重", width: 120 },
+                    { "field": "weightLtwbmwdScore", "title": "炉体外表面温度权重得分", width: 140 },
+                    { "field": "ltwbmwdpj", "title": "炉体外表面温度评价", width: 120 },
+                    // { "field": "ssdwdm", "title": "所属单位", width: 110 },
+                    { "field": "yxss", "title": "运行时数", width: 110 },
+                    { "field": "jrljkwd", "title": "进口温度(℃)", width: 110 },
+                    { "field": "jrlckwd", "title": "出口温度(℃)", width: 110 },
+                    { "field": "rlxhl", "title": "燃料消耗量", width: 110 },
+                    { "field": "jxScore", "title": "加热炉总得分", width: 110 },
+                    { "field": "jxpj", "title": "加热炉综合评价", width: 110 }
+                ]]
+            });
+        });
+
+        function searchPageData() {
+            $("#display-data-table").datagrid('load', {
+                cycle: '日',
+                assessmentDate: $("#query-assessmentDate-key").datebox('getValue'),
+                sszkName: $('#query-stations').combobox('getText') === '全部' ? '' : $('#query-stations').combobox('getText'),
+                mc: $("#query-mc-key").textbox('getValue'),
+                znbh: $("#query-znbh-key").textbox('getValue'),
+                jxpj: $("#evaluate").combobox('getValue'),
+            });
+            getStaticDatas();
+        }
+
+        function getLine(type) {
+            var selectedRows = $("#display-data-table").datagrid("getSelections");
+            if (selectedRows == null || selectedRows.length == 0) {
+                $.messager.alert("提示信息", "您未选择要查看的记录。", "warning");
+            } else if (selectedRows.length > 1) {
+                $.messager.alert("提示信息", "您只能选择一条记录进行查看。", "warning");
+            } else {
+                var editDialog = $("<div></div>").dialog({
+                    title: '统计信息',
+                    width: 1400,
+                    height: 600,
+                    modal: true,
+                    iconCls: "fa fa-pencil-square-o",
+                    href: '/dmgc_y_d_jrl/toLineChart',
+                    onClose: function () {
+                        $(this).dialog('destroy');
+                    },
+                    onLoad: function () {
+                        $("#type-key").val(type);
+                        $("#jrlid-key").val(selectedRows[0].jrlId);
+                    },
+                    buttons: [
+                        {
+                            text: '关闭',
+                            iconCls: 'fa fa-close',
+                            handler: function () {
+                                editDialog.dialog('destroy');
+                            }
+                        }
+                    ]
+                });
+            }
+        }
+
+        function chart(type) {
+            var selectedRows = $("#display-data-table").datagrid("getSelections");
+            if (selectedRows == null || selectedRows.length == 0) {
+                $.messager.alert("提示信息", "您未选择要查看的记录。", "warning");
+            } else if (selectedRows.length > 1) {
+                $.messager.alert("提示信息", "您只能选择一条记录进行查看。", "warning");
+            } else {
+                var editDialog = $("<div></div>").dialog({
+                    title: '统计信息',
+                    width: 1400,
+                    height: 550,
+                    modal: true,
+                    iconCls: "fa fa-pencil-square-o",
+                    href: '/dmgc_y_d_jrl/toChart',
+                    onClose: function () {
+                        $(this).dialog('destroy');
+                    },
+                    onLoad: function () {
+                        var assessmentDate = $('#query-assessmentDate-key').datebox('getValue');
+                        var rowData = selectedRows[0];
+                        var myChart = echarts.init(document.getElementById('firstRadar'));
+                        var legendName = rowData.sszkName + rowData.mc + rowData.znbh;
+                        var myData = [rowData.lxScore, rowData.kqxsScore, rowData.yqwdScore, rowData.ltwbmwdScore, rowData.rfhScore];
+
+                        $("#measures-originalDataDate").val(assessmentDate);
+                        $("#measures-zid").val(null);
+                        $("#measures-zmc").val(rowData.sszkName);
+                        $("#measures-equipmentId").val(rowData.jrlId);
+                        $("#measures-equipmentName").val(rowData.mc);
+
+                        $.ajax({
+                            url: '/energySavingMeasures/getByParam',
+                            data: { queryDate: assessmentDate, equipmentId: rowData.jrlId },
+                            type: 'get',
+                            dataType: 'json',
+                            success: function (data) {
+                                if (data !== null) {
+                                    $("#measures-id").val(data.id);
+                                    $("#measures").textbox('setValue', data.measures);
+                                }
+                            }
+                        });
+
+                        var option = {
+                            title: {
+                                text: legendName + '雷达'
+                            },
+                            radar: {
+                                shape: 'circle',
+                                axisLabel: {
+                                    show: true,
+                                    showMaxLabel: true, //显示最大值，即外圈显示数字
+                                    showMinLabel: true, //显示最小数字，即中心点显示0
+                                },
+                                indicator: [
+                                    { name: '加热炉效率', max: 100 },
+                                    { name: '空气系数', max: 100 },
+                                    { name: '排烟温度', max: 100 },
+                                    { name: '炉体外表面温度', max: 100 },
+                                    { name: '热负荷率', max: 100 }
+                                ]
+                            },
+                            series: [
+                                {
+                                    name: '加热炉',
+                                    type: 'radar',
+                                    areaStyle: {},
+                                    label: { show: true },
+                                    data: [
+                                        {
+                                            value: myData,
+                                            name: legendName
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                        myChart.setOption(option);
+                    },
+                    buttons: [
+                        {
+                            text: '保存',
+                            iconCls: 'fa fa-save',
+                            handler: function () {
+                                var myId = $("#measures-id").val();
+                                if (myId == null || myId == undefined || myId == "") {
+                                    submitDataForm("edit-form", editDialog, "/energySavingMeasures/save");
+                                }
+                                else {
+                                    submitDataForm("edit-form", editDialog, "/energySavingMeasures/update");
+                                }
+                            }
+                        },
+                        {
+                            text: '删除',
+                            iconCls: 'fa fa-remove',
+                            handler: function () {
+                                $.messager.confirm('删除确认', '您是否确认要删除当前的整改建议？', function (r) {
+                                    if (r) {
+                                        var ids = new Array();
+                                        let measuresId = $("#measures-id").val();
+                                        if (measuresId != "") {
+                                            ids.push(measuresId);
+                                            $.ajax({
+                                                url: '/energySavingMeasures/delete',
+                                                data: { "ids[]": ids },
+                                                type: 'post',
+                                                dataType: 'json',
+                                                success: function (data) {
+                                                    if (data.result) {
+                                                        $("#measures").textbox('setValue', "");
+                                                        // editDialog.dialog('destroy');
+                                                    } else {
+                                                        $.messager.alert("提示信息", data.msg, "error");
+                                                    }
+                                                }
+                                            });
+                                        } else {
+                                            $("#measures").textbox('setValue', "");
+                                        }
+
+                                    }
+                                });
+                            }
+                        },
+                        {
+                            text: '关闭',
+                            iconCls: 'fa fa-close',
+                            handler: function () {
+                                editDialog.dialog('destroy');
+                            }
+                        }
+                    ]
+                });
+            }
+        }
+
+        function submitDataForm(formId, dialog, url) {
+            var validate;
+            $("#" + formId).form('submit', {
+                url: url,
+                onSubmit: function () {
+                    validate = $(this).form("validate");
+                    return validate;
+                },
+                success: function (data) {
+                    if (validate) {
+                        data = $.parseJSON(data);
+                        if (data.result) {
+                            dialog.dialog("destroy");
+                            $.messager.show({ title: '提示信息', msg: data.msg, timeout: 5000, showType: 'show' });
+                        } else {
+                            $.messager.alert("提示信息", data.msg, "error");
+                        }
+                    }
+                }
+            });
+        }
+
+        function setPipe(initedChart, response) {
+            var myOption = {
+                title: {
+                    left: 'center',
+                    text: response.title
+                },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: "{a} <br/>{b}: {c} ({d}%)"//模板变量有 {a}、{b}、{c}、{d}，分别表示系列名，数据名，数据值，百分比
+                },
+                legend: {
+                    orient: 'vertical',
+                    left: 'right',
+                },
+                series: [{
+                    name: response.title,
+                    type: 'pie',
+                    radius: '50%',
+                    labelLine: {
+                        show: true
+                    },
+                    label: {
+                        formatter: '{b}: {c} ({d}%)',//模板变量有 {a}、{b}、{c}、{d}，分别表示系列名，数据名，数据值，百分比
+                    },
+                    data: response.series,
+                    emphasis: {
+                        itemStyle: {
+                            shadowBlur: 10,
+                            shadowOffsetX: 0,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                        }
+                    }
+                }
+                ]
+            }
+            initedChart.setOption(myOption);
+        }
+
+        function getStaticDatas() {
+            $.ajax({
+                url: '/dmgc_y_d_jrl/getAllStaticsOfPipe',
+                data: {
+                    'rq': $('#query-assessmentDate-key').datebox('getValue')
+                },
+                type: 'get',
+                dataType: 'json',
+                success: function (response) {
+                    setPipe(myChart0, response[0]);
+                    setPipe(myChart1, response[1]);
+                    setPipe(myChart2, response[2]);
+                    setPipe(myChart3, response[3]);
+                    setPipe(myChart4, response[4]);
+                    setPipe(myChart5, response[5]);
+                    setPipe(myChart6, response[6]);
+                }
+            });
+        }
+
+        function flagColor(val, row, index) {
+            // if (!row.dataAlreadyAudited || row.dataAlreadyAudited == null) {
+            return 'background:#FFFACD';
+            // }
+        }
+
+        var editIndex = undefined;
+        function endEditing() {//该方法用于关闭上一个焦点的editing状态
+            if (editIndex == undefined) {
+                return true
+            }
+            if ($('#display-data-table').datagrid('validateRow', editIndex)) {
+                $('#display-data-table').datagrid('endEdit', editIndex);
+                editIndex = undefined;
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+
+        function onClickCell(index, field, value) {
+            if (endEditing()) {
+                if (field == "jrlyxzk" || field == "lx" || field == "yqwd" || field == "yqhyl" || field == "jrl" || field == "ltwbmwd") {
+                    var row = $('#display-data-table').datagrid('getRows')[index];
+                    // if (!row.dataAlreadyAudited || row.dataAlreadyAudited == null) {
+                    $(this).datagrid('beginEdit', index);
+                    var ed = $(this).datagrid('getEditor', { index: index, field: field });
+                    $(ed.target).focus();
+                    // }
+                }
+                editIndex = index;
+            }
+            //$('#display-data-table').datagrid('onClickRow')
+        }
+
+        //单元格失去焦点执行的方法
+        function onAfterEdit(index, row, changes) {
+            var updated = $('#display-data-table').datagrid('getChanges', 'updated');
+            if (updated.length < 1) {
+                editRow = undefined;
+                $('#display-data-table').datagrid('unselectAll');
+                return;
+            } else {
+                submitLtbmwd(index, row, changes);
+            }
+        }
+
+        //提交数据
+        function submitLtbmwd(index, row, changes) {
+            $.ajax({
+                type: "get",
+                async: false,
+                url: "/dmgc_y_d_jrl/saveLtbmwd",
+                data: {
+                    id: row.eventId,
+                    jrlyxzk: row.jrlyxzk,
+                    lx: row.lx,
+                    yqwd: row.yqwd,
+                    yqhyl: row.yqhyl,
+                    jrl: row.jrl,
+                    ltwbmwd: row.ltwbmwd,
+                }
+            })
+        }
+
+        function auditData() {
+            $.ajax({
+                type: "get",
+                async: false,
+                url: "/dmgc_y_d_jrl/auditData",
+                data: {
+                    "rq": $('#query-assessmentDate-key').datebox('getValue')
+                },
+                success: function (response) {
+                    $('#display-data-table').datagrid('reload');
+                    getStaticDatas();
+                    getIfSomeDataNotInput();
+
+                }
+            })
+        }
+
+        function getIfSomeDataNotInput() {
+            $.ajax({
+                type: "get",
+                async: false,
+                url: "/dmgc_y_d_jrl/getIfSomeDataNotInput",
+                data: {
+                    "rq": $('#query-assessmentDate-key').datebox('getValue')
+                },
+                success: function (response) {
+                    if (response) {
+                        $.messager.alert("提示信息", "尚有在运行的数据未录入，会影响所属站得分", "error");
+                    }
+                }
+            })
+        }
+
+        function exportExamineData() {
+            window.open("/dmgc_y_d_jrl/exportExamineData?queryDate=" +
+                $("#query-assessmentDate-key").datebox('getValue'));
+        }
+
+        function setBackGround(index, row) {
+            if (row.jrlyxzk == "01") {
+                let count = 0;
+                if (row.jxpj === '不合格' || row.jxpj === '' || row.jxpj === null) {
+                    count++;
+                }
+                if (row.lxpj === '不合格' || row.lxpj === '' || row.lxpj === null) {
+                    count++;
+                }
+                if (row.ltwbmwdpj === '不合格' || row.ltwbmwdpj === '' || row.ltwbmwdpj === null) {
+                    count++;
+                }
+                if (row.kqxspj === '不合格' || row.kqxspj === '' || row.kqxspj === null) {
+                    count++;
+                }
+                if (row.yqwdpj === '不合格' || row.yqwdpj === '' || row.yqwdpj === null) {
+                    count++;
+                }
+                if (row.rfhpj === '不合格' || row.rfhpj === '' || row.rfhpj === null) {
+                    count++;
+                }
+                if (count === 0) {
+                    return 'background-color:#C1FFC1;font-weight:bold;';
+                }
+                if (count == 1) {
+                    return 'background-color:#FFC0CB;font-weight:bold;';
+                }
+                if (count > 1) {
+                    return 'background-color:#FF6A6A;font-weight:bold;';
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>

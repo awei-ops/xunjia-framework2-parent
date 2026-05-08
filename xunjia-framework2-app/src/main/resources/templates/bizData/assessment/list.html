@@ -1,0 +1,252 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:xunjia="http://www.thymeleaf.org">
+
+<head>
+    <div th:replace="framework/include/head::head"></div>
+</head>
+
+<body>
+<div class="easyui-layout" fit="true">
+    <div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+        <input id="benchmark-name-key" class="easyui-textbox"
+               data-options="width:240,label:'标杆名称：' ,labelAlign:'right',labelWidth:90"/>
+        <input id="benchmark-code-key" class="easyui-textbox"
+               data-options="width:240,label:'标杆编码：' ,labelAlign:'right',labelWidth:90"/>
+        <input id="benchmark-level-key" class="easyui-textbox"
+               data-options="width:240,label:'标杆级别：' ,labelAlign:'right',labelWidth:90"/>
+        <input id="benchmark-type-key" class="easyui-textbox"
+               data-options="width:240,label:'标杆类别：' ,labelAlign:'right',labelWidth:90"/>
+        <a href="javascript:" onclick="searchPageData();" class="easyui-linkbutton"
+           iconCls="fa fa-search">查询</a>
+    </div>
+    <div data-options="region:'center'">
+        <table id="display-data-table"></table>
+        <div id="user-operation-bar" class="datagrid-toolbar">
+            <xunjia:button th:menu-id="${menuId}" perm-code="benchmarks:save"/>
+            <xunjia:button th:menu-id="${menuId}" perm-code="benchmarks:update"/>
+            <xunjia:button th:menu-id="${menuId}" perm-code="benchmarks:delete"/>
+        </div>
+    </div>
+</div>
+
+<script th:inline="none">
+	$(function(){
+		$("#display-data-table").datagrid({
+			url: '/benchmarks/findBenchmarks',
+			idField: 'id',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: true,
+			pageSize: 20,
+			rownumbers: true,
+			toolbar: "#user-operation-bar",
+			columns: [[
+				{
+					field: 'id',
+					checkbox: true
+				},
+				{
+					field: 'name',
+					title: '标杆名称',
+					width: 80
+				}, {
+					field: 'code',
+					title: '标杆编码',
+					width: 60
+				},
+				{
+					field: 'level',
+					title: '标杆级别',
+					width: 80
+				}, {
+					field: 'type',
+					title: '标杆类别',
+					width: 80
+				},
+				{
+					field: 'rightValue',
+					title: '插值最右端值',
+					width: 80
+				},
+				{
+					field: 'leftValue',
+					title: '插值最左端值',
+					width: 80
+				},
+                {
+                    field: 'minScore',
+                    title: '最低分',
+                    width: 80
+                }
+			]]
+		});
+	});
+
+	function getUrlParam(name) {
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)"); //构造一个含有目标参数的正则表达式对象
+        var r = window.location.search.substr(1).match(reg);  //匹配目标参数
+        if (r != null) return unescape(r[2]); return null; //返回参数值
+    }
+	
+	function add(){
+		var addDialog = $("<div></div>").dialog({
+			title: '添加数据',
+			width: 630,
+			height: 400,
+			modal: true,
+			iconCls: "fa fa-pencil-square-o",
+			href: '/benchmarks/toAdd',
+			onClose : function() {
+                $(this).dialog('destroy');
+            },
+			buttons: [
+				{ 
+					text: '保存',
+					iconCls: 'fa fa-save', 
+					handler: function(){
+						submitDataForm("add-form", addDialog, "/benchmarks/save");
+					} 
+				},
+				{ 
+					text: '关闭', 
+					iconCls: 'fa fa-close', 
+					handler: function() { 
+						addDialog.dialog('destroy'); 
+					}
+				}
+			]
+		});
+	}
+	
+	function edit(){
+		var selectedRows = $("#display-data-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要编辑的记录。", "warning");
+		} else if (selectedRows.length > 1){
+			$.messager.alert("提示信息", "您只能选择一条记录进行操作。", "warning");
+		} else {
+			var editDialog = $("<div></div>").dialog({
+				title: '编辑数据',
+				width: 630,
+				height: 400,
+				modal: true,
+				iconCls: "fa fa-pencil-square-o",
+				href: '/benchmarks/toEdit',
+				onClose : function() {
+	                $(this).dialog('destroy');
+	            },
+				onLoad: function(){
+					$.ajax({
+						url: '/benchmarks/findById',
+						data: { id: selectedRows[0].id },
+						type: 'get',
+						dataType: 'json',
+						success: function(data){
+							$("#benchmark-id").val(data.id);
+							$("#indicator-original-code").val(data.code);
+							$("#benchmark-name").textbox('setValue', data.name);
+							$("#benchmark-code").textbox('setValue', data.code);
+							$("#benchmark-level").textbox('setValue', data.level);
+							$("#benchmark-type").textbox('setValue', data.type);
+							$("#benchmark-right").numberbox('setValue', data.rightValue);
+							$("#benchmark-left").numberbox('setValue', data.leftValue);
+							$("#benchmark-minScore").numberbox('setValue', data.minScore);
+						}
+					});	
+				},
+				buttons: [
+					{ 
+						text: '保存', 
+						iconCls: 'fa fa-save', 
+						handler: function(){
+							submitDataForm("edit-form", editDialog, "/benchmarks/update");
+						} 
+					},
+					{ 
+						text: '关闭', 
+						iconCls: 'fa fa-close', 
+						handler: function(){ 
+							editDialog.dialog('destroy'); 
+						} 
+					}
+				]
+			});
+		}
+	}
+	
+	function dataRemove(){
+		var selectedRows = $("#display-data-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要删除的记录。", "warning");
+		} else {
+			$.messager.confirm('删除确认', '您是否确认要删除选中的记录？', function(r){
+				if (r){
+					var ids = new Array();
+					$.each(selectedRows, function(i, n){
+						ids[i] = n.id;
+					});
+					
+					$.ajax({
+						url: '/benchmarks/delete',
+						data: { "ids[]": ids },
+						type: 'post',
+						dataType: 'json',
+						success: function(data){
+							if (data.result){
+								$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+								$("#display-data-table").datagrid("reload");
+								$("#display-data-table").datagrid("clearSelections");
+							} else {
+								$.messager.alert("提示信息", data.msg, "error");
+							}
+						}
+					});	
+				}
+			});
+		}
+	}
+	
+	function submitDataForm(formId, dialog, url){
+	    var validate;
+		$("#" + formId).form('submit', {
+			url: url,
+			onSubmit: function(){
+			    validate = $(this).form("validate");
+                return validate;
+			},
+			success: function(data){
+			    if(validate){
+                    data = $.parseJSON(data);
+                    if (data.result){
+                        dialog.dialog("destroy");
+                        $.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+                        $("#display-data-table").datagrid("reload");
+                        $("#display-data-table").datagrid("clearSelections");
+                    } else {
+                        $.messager.alert("提示信息", data.msg, "error");
+                    }
+				}
+			}
+		});
+	}
+	
+	function searchPageData(){
+		$("#display-data-table").datagrid('load', {
+			'name': $("#benchmark-name-key").textbox('getValue'),
+			'code': $("#benchmark-code-key").textbox('getValue'),
+			'level':$("#benchmark-level-key").textbox('getValue'),
+			'type':$("#benchmark-type-key").textbox('getValue'),
+			'deleteFlag':0
+		});
+	}
+
+
+
+
+</script>
+</body>
+</html>

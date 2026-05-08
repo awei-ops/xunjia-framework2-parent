@@ -1,0 +1,258 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:bf="http://www.thymeleaf.org">
+	
+<head>
+	<div th:replace="framework/include/head::head"></div>
+</head>
+	
+<body>
+	<div class="easyui-layout" fit="true">
+		<div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+			<input id="atta-title-key" class="easyui-textbox" data-options="width:240,label:'资源名称：' ,labelAlign:'right',labelWidth:70" />
+			<input id="atta-start-date" class="easyui-datebox" data-options="width:240,editable:false,label:'起始日期：' ,labelAlign:'right',labelWidth:70" />
+			<input id="atta-end-date" class="easyui-datebox" data-options="width:240,editable:false,label:'截止日期：' ,labelAlign:'right',labelWidth:70" />
+			<a href="javascript:" onclick="searchAttachment();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+		</div>
+		<div data-options="region:'center'">
+			<table id="attachment-table"></table>
+			<bf:DgTools toolId="attachmentDgTools" th:menuId="${menuId}" />
+		</div>
+	</div>
+	
+	<script th:inline="none">
+	$(function(){
+		$("#attachment-table").datagrid({
+			url: '/attachment/findAttachments',
+			idField: 'code',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: true,
+			pageSize: 20,
+			rownumbers: true,
+			toolbar: "#attachmentDgTools",
+			columns: [[
+				{
+					field: 'code',
+					checkbox: true
+				}, {
+					field: 'title',
+					title: '附件名称',
+					width: 80
+				}, {
+					field: 'originalFileName',
+					title: '文件名',
+					width: 80
+				}, {
+					field: 'contentType',
+					title: '文件类型',
+					width: 80
+				}, {
+					field: 'uploadUser',
+					title: '上传人',
+					width: 80,
+					formatter: function(value, row, index){
+						return value.realName;
+					}
+				}, {
+					field: 'uploadTime',
+					title: '上传时间',
+					width: 80
+				}, {
+					field: 'downloadCount',
+					title: '下载次数',
+					width: 80
+				}
+			]]
+		});
+	});
+	
+	function searchAttachment(){
+		var title = $("#atta-title-key").textbox('getValue');
+		var startDate = $("#atta-start-date").datebox('getValue');
+		var endDate = $("#atta-end-date").datebox('getValue');
+		$("#attachment-table").datagrid('load', {
+			title: title,
+			startDate: startDate,
+			endDate: endDate
+		});
+	}
+	
+	function add(){
+		var addDialog = $("<div></div>").dialog({
+			title: '添加附件',
+			width: 600,
+			height: 340,
+			modal: true,
+			iconCls: "fa fa-pencil-square-o",
+			href: '/attachment/toAdd',
+			onClose : function() {
+                $(this).dialog('destroy');
+            },
+			buttons: [
+				{ 
+					text: '保存', 
+					iconCls: 'fa fa-save', 
+					handler: function(){
+						submitForm("atta-form", addDialog, "/attachment/save");
+					} 
+				},
+				{ 
+					text: '关闭', 
+					iconCls: 'fa fa-close', 
+					handler: function() { 
+						addDialog.dialog('destroy'); 
+					}
+				}
+			]
+		});
+	}
+	
+	function edit(){
+		var selectedRows = $("#attachment-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要编辑的记录。", "warning");
+		} else if (selectedRows.length > 1){
+			$.messager.alert("提示信息", "您只能选择一条记录进行操作。", "warning");
+		} else {
+			var editDialog = $("<div></div>").dialog({
+				title: '编辑附件信息',
+				width: 600,
+				height: 290,
+				modal: true,
+				iconCls: "fa fa-pencil-square-o",
+				href: '/attachment/toEdit',
+				onLoad: function(){
+					$.ajax({
+						url: '/attachment/findByCode',
+						data: { code: $("#attachment-table").datagrid("getSelections")[0].code },
+						type: 'get',
+						dataType: 'json',
+						success: function(data){
+							$("#atta-code").val(data.code);
+							$("#atta-title").textbox('setValue', data.title);
+							$("#atta-desc").textbox('setValue', data.description);
+						}
+					});
+				},
+				onClose : function() {
+	                $(this).dialog('destroy');
+	            },
+				buttons: [
+					{ 
+						text: '保存', 
+						iconCls: 'fa fa-save', 
+						handler: function(){
+							submitForm("atta-form", editDialog, "/attachment/update");
+						} 
+					},
+					{ 
+						text: '关闭', 
+						iconCls: 'fa fa-close', 
+						handler: function() { 
+							editDialog.dialog('destroy'); 
+						}
+					}
+				]
+			});
+		}
+	}
+	
+	function submitForm(formId, dialog, url){
+		$("#" + formId).form('submit', {
+			url: url,
+			onSubmit: function(){
+				return $(this).form("validate");
+			},
+			success: function(data){
+				data = $.parseJSON(data);
+				if (data.result){
+					dialog.dialog("destroy");
+					$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+					$("#attachment-table").datagrid("reload");
+					$("#attachment-table").datagrid("clearSelections");
+				} else {
+					$.messager.alert("提示信息", data.msg, "error");
+				}
+			}
+		});
+	}
+	
+	function dataRemove(){
+		var selectedRows = $("#attachment-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要删除的记录。", "warning");
+		} else {
+			$.messager.confirm('删除确认', '您是否确认要删除选中的记录？', function(r){
+				if (r){
+					var codes = new Array();
+					$.each(selectedRows, function(i, n){
+						codes[i] = n.code;
+					});
+					
+					$.ajax({
+						url: '/attachment/delete',
+						data: { "codes[]": codes },
+						type: 'post',
+						dataType: 'json',
+						success: function(data){
+							if (data.result){
+								$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+								$("#attachment-table").datagrid("reload");
+								$("#attachment-table").datagrid("clearSelections");
+							} else {
+								$.messager.alert("提示信息", data.msg, "error");
+							}
+						}
+					});	
+				}
+			});
+		}
+	}
+	
+	function dataDownload(){
+		var selectedRows = $("#attachment-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要下载的文件。", "warning");
+		} else if (selectedRows.length > 1){
+			$.messager.alert("提示信息", "您只能选择一条记录进行操作。", "warning");
+		} else {
+			var dialog = $("<div></div>").dialog({
+				title: '下载附件',
+				width: 600,
+				height: 290,
+				modal: true,
+				iconCls: "fa fa-chevron-circle-down",
+				href: '/attachment/toDownload',
+				onLoad: function(){
+					$("#td-title").text(selectedRows[0].title);
+					$("#td-descr").text(selectedRows[0].description);
+				},
+				onClose : function() {
+	                $(this).dialog('destroy');
+	            },
+				buttons: [
+					{ 
+						text: '下载', 
+						iconCls: 'fa fa-download', 
+						handler: function(){
+							window.open("/attachment/download?code=" + selectedRows[0].code);
+						} 
+					},
+					{ 
+						text: '关闭', 
+						iconCls: 'fa fa-close', 
+						handler: function() { 
+							dialog.dialog('destroy'); 
+						}
+					}
+				]
+			});
+		}
+	}
+	</script>
+</body>
+</html>

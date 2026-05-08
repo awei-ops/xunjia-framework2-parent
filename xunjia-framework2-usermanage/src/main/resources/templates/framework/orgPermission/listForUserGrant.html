@@ -1,0 +1,152 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:xunjia="http://www.thymeleaf.org">
+	
+<head>
+	<div th:replace="framework/include/head::head"></div>
+</head>
+
+<body>
+	<div class="easyui-layout" fit="true">
+		<div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+			<input id="ugo-usernameKey" class="easyui-textbox" data-options="width:240,label:'用户名：' ,labelAlign:'right',labelWidth:70" />
+			<input id="ugo-realNameKey" class="easyui-textbox" data-options="width:240,label:'姓名首拼：' ,labelAlign:'right',labelWidth:70" />
+			<a href="javascript:" onclick="searchUgoUser();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+		</div>
+		<div data-options="region:'west',border:false,title:'组织机构',collapsible:false" style="width:20%;">
+			<div id="ugo-org-tree" class="easyui-tree" data-options="
+				url: '/org/getEnableOrgTree',
+				animate: true,
+				onClick: ugoOrgClicked
+			"></div>
+		</div>
+		<div data-options="region:'center',border:false,title:'用户信息',collapsible:false" style="width:40%;">
+			<table id="user-org-list-table"></table>
+		</div>
+		<div data-options="region:'east',border:false,title:'有权组织',collapsible:false" style="width:40%;">
+			<table id="user-right-org-table"></table>
+		</div>
+	</div>
+	<div id="user-org-grant-datagrid-toolbar" class="datagrid-toolbar">
+		<xunjia:button th:menu-id="${menuId}" perm-code="orgPermission:userGrantSave" />
+	</div>
+	<script th:inline="none">
+	$(function(){
+		$("#user-org-list-table").datagrid({
+			url: '/user/findUsers?enable=1',
+			idField: 'id',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: true,
+			pageSize: 20,
+			rownumbers: true,
+			singleSelect: true,
+			toolbar: "#user-org-grant-datagrid-toolbar",
+			columns: [[
+				{
+					field: 'id',
+					checkbox: true
+				}, {
+					field: 'realName',
+					title: '姓名',
+					width: 80
+				}, {
+					field: 'username',
+					title: '用户名',
+					width: 80
+				}, {
+					field: 'staffCode',
+					title: '员工编号',
+					width: 80
+				}
+			]],
+			onClickRow: function(index, data){
+				$("#user-right-org-table").datagrid('load', {
+					'ownerId': data.id
+				});
+			}
+		});
+		
+		$("#user-right-org-table").datagrid({
+			url: '/orgPermission/findRightOrgs?ownerType=U',
+			idField: 'id',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: true,
+			pageSize: 30,
+			rownumbers: true,
+			columns: [[
+				{
+					field: 'rankName',
+					title: '组织名称',
+					width: 60
+				}
+			]]
+		});
+		
+	});
+	
+	function grant(){
+		var selectedRows = $("#user-org-list-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要授权的用户。", "warning");
+		} else if (selectedRows.length > 1){
+			$.messager.alert("提示信息", "您只能选择一个用户进行操作。", "warning");
+		} else {
+			var grantDialog = $("<div></div>").dialog({
+				title: '组织授权',
+				width: 1100,
+				height: 600,
+				modal: true,
+				cache: false,
+				iconCls: "fa fa-pencil-square-o",
+				href: '/orgPermission/toGrantOrgForUser',
+				onClose : function() {
+	                $(this).dialog('destroy');
+	            },
+				buttons: [
+					{ 
+						iconCls: 'fa fa-level-down',
+						text: '授权',
+						handler: function(){
+							submitGrant();
+						}
+					}, { 
+						iconCls: 'fa fa-level-up',
+						text: '回收',
+						handler: function(){
+							recoverGrant();
+						}
+					},
+					{ 
+						text: '关闭', 
+						iconCls: 'fa fa-close', 
+						handler: function() { 
+							grantDialog.dialog('destroy'); 
+						}
+					}
+				]
+			});
+		}
+	}
+	
+	function ugoOrgClicked(node){
+		searchUgoUser();
+	}
+	
+	function searchUgoUser(){
+		var selectedNode = $("#ugo-org-tree").tree("getSelected"); 
+		$("#user-org-list-table").datagrid('load', {
+			'username': $("#ugo-usernameKey").textbox('getValue'),
+			'realNamePyCode': $("#ugo-realNameKey").textbox('getValue'),
+			'orgId': selectedNode == null ? '' : selectedNode.id
+		});
+	}
+	</script>
+</body>
+</html>

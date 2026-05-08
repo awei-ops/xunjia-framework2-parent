@@ -1,0 +1,29 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:bf="http://www.thymeleaf.org">
+	
+<body>
+	<div class="table-container">
+		<form id="form1" method="post">
+			<table class="edit-table">
+				<tr>
+					<th>上级资源：</th>
+					<td>
+						<select class="easyui-combotree" id="resource-parent" data-options="
+						width: 310,
+						url: '/resource/findResourceTree',
+						textField: 'name',
+						valueField: 'id',
+						required: true
+					">
+						</select>
+					</td>
+				</tr>
+			</table>
+			
+		</form>
+	</div>
+</body>
+
+</html>

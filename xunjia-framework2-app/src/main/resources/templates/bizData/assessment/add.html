@@ -1,0 +1,56 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	  xmlns:th="http://www.thymeleaf.org"
+	  xmlns:bf="http://www.thymeleaf.org">
+
+
+<div class="table-container">
+	<form id="add-form" method="post">
+		<input type="hidden" id="benchmark" name="deviceCategory" />
+		<table class="edit-table">
+			<tr>
+				<th>标杆名称：</th>
+				<td>
+					<input class="easyui-textbox" id="benchmark-name" name="name" data-options="required:true,width:240" />
+				</td>
+			</tr>
+			<tr>
+				<th>标杆编码：</th>
+				<td>
+					<input class="easyui-textbox" id="benchmark-code" name="code" data-options="required:true,width:240" />
+				</td>
+			</tr>
+			<tr>
+				<th>标杆级别：</th>
+				<td>
+					<input class="easyui-textbox" id="benchmark-level" name="level" data-options="required:true,width:240" />
+				</td>
+			</tr>
+			<tr>
+				<th>标杆类别：</th>
+				<td>
+					<input class="easyui-textbox" id="benchmark-type" name="type" data-options="required:true,width:240" />
+				</td>
+			</tr>
+			<tr>
+				<th>插值最右端值：</th>
+				<td>
+					<input class="easyui-numberbox" data-options="min:1,precision:2,required:true,width:240" id="benchmark-right" name="rightValue" />
+				</td>
+			</tr>
+			<tr>
+				<th>插值最左端值：</th>
+				<td>
+					<input class="easyui-numberbox" data-options="min:1,precision:2,required:true,width:240" id="benchmark-left" name="leftValue" />
+				</td>
+			</tr>
+			<tr>
+				<th>最低分：</th>
+				<td>
+					<input class="easyui-numberbox" data-options="min:1,precision:2,width:240" id="benchmark-minScore" name="minScore" />
+				</td>
+			</tr>
+		</table>
+	</form>
+</div>
+</html>

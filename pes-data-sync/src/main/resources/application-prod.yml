@@ -1,0 +1,38 @@
+server:
+  port: 8099
+spring:
+  datasource:
+    a5:
+      type: com.alibaba.druid.pool.DruidDataSource
+      url: jdbc:oracle:thin:@11.11.126.100:1521/orcl100
+      driverClassName: oracle.jdbc.OracleDriver
+      username: jn_admin
+      password: CY10_jienengplan
+    pes:
+      type: com.alibaba.druid.pool.DruidDataSource
+      url: jdbc:mariadb://11.11.111.218:33060/pes?useUnicode=true&characterEncoding=utf8mb4&SslMode=None&serverTimezone=Asia/Shanghai
+      driver-class-name: org.mariadb.jdbc.Driver
+      username: root
+      password: yjzx@1234567890
+    druid:
+      filters: stat,wall
+      connection-properties: druid.stat.mergeSql=true;druid.stat.slowSqlMills=5000
+  devtools:
+    restart:
+      enabled: false
+      exclude: static/**,public/**,content/**,templates/**
+  jpa:
+    show-sql: true
+    database-platform: org.hibernate.dialect.MariaDB103Dialect
+    hibernate:
+      ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+
+
+com:
+  alibaba:
+    druid:
+      servlet:
+        allow: 127.0.0.1
+        deny:

@@ -1,0 +1,512 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:xunjia="http://www.thymeleaf.org">
+	
+<head>
+	<div th:replace="framework/include/head::head"></div>
+</head>
+
+<body>
+	<div class="easyui-layout" fit="true">
+		<div data-options="region:'west',width:210">
+			<div id="user-org-tree" class="easyui-tree" data-options="
+				url: '/org/getEnableOrgTree',
+				animate: true,
+				onClick: orgClicked
+			"></div>
+		</div>
+		<div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+			<input id="user-usernameKey" class="easyui-textbox" data-options="width:240,label:'用户名：' ,labelAlign:'right',labelWidth:70" />
+			<input id="user-realNameKey" class="easyui-textbox" data-options="width:240,label:'姓名首拼：' ,labelAlign:'right',labelWidth:70" />
+			<select id="user-enableKey" class="easyui-combobox" data-options="width:240,panelHeight:'auto',editable:false,label:'用户状态：',labelAlign:'right',labelWidth:70">
+				<option value="-1" selected>全部</option>
+				<option value="1">启用</option>
+				<option value="0">禁用</option>
+			</select>
+			<a href="javascript:" onclick="searchUser();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+		</div>
+		<div data-options="region:'center'">
+			<table id="user-table"></table>
+			<div id="user-datagrid-toolbar" class="datagrid-toolbar">
+				<xunjia:button th:menu-id="${menuId}" perm-code="user:save" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="user:update" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="user:delete" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="user:enable" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="user:disable" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="user:import" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="user:resetPassword" />
+			</div>
+		</div>
+	</div>
+	
+	<div id="user-import-dialog">
+		<form id="user-import-form" method="post" enctype="multipart/form-data">
+			<table class="edit-table">
+				<tr>
+					<th>数据文件：</th>
+					<td>
+						<input class="easyui-filebox" id="userFile" name="userFile"
+						data-options="editable:false,width:300,required:true,buttonText:'选择数据文件'" />
+					</td>
+				</tr>
+				<tr>
+					<th>数据模板：</th>
+					<td><a href="/template/用户信息模板.xlsx" target="_blank">点击下载数据模板</a></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	<script th:inline="none">
+	var userTable = null;
+	$(function(){
+		userTable = $("#user-table").datagrid({
+			url: '/user/findUsers',
+			idField: 'id',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: true,
+			pageSize: 20,
+			rownumbers: true,
+			toolbar: "#user-datagrid-toolbar",
+			columns: [[
+				{
+					field: 'id',
+					checkbox: true
+				}, {
+					field: 'realName',
+					title: '姓名',
+					width: 60
+				}, {
+					field: 'username',
+					title: '用户名',
+					width: 70
+				}, {
+					field: 'org',
+					title: '所属组织',
+					width: 80,
+					formatter: function(value, row, index){
+						return value == null ? "" : value.name;
+					}
+				}, {
+					field: 'staffCode',
+					title: '员工号',
+					width: 80
+				}, {
+					field: 'email',
+					title: '电子邮箱',
+					width: 80
+				}, {
+					field: 'phone',
+					title: '联系电话',
+					width: 80
+				}, {
+					field: 'idCard',
+					title: '身份证',
+					width: 80
+				}, {
+					field: 'headImage',
+					title: '头像',
+					width: 70,
+					formatter: function(value, row, index){
+						if (value != null && value != ''){
+							return "<img src='"+ value +"' style='width:80px;'></img>";
+						}
+					}
+				}, {
+					field: 'signImage',
+					title: '签名',
+					width: 80,
+					formatter: function(value, row, index){
+						if (value != null && value != ''){
+							return "<img src='"+ value +"' style='width:80px;'></img>";
+						}
+					}
+				}, {
+					field: 'enable',
+					title: '状态',
+					width: 50,
+					formatter: function(value, row, index){
+						return value == 0 ? "禁用" : "启用";
+					}
+				}
+			]],
+			onLoadSuccess : function(){
+			    $(this).datagrid('fixRowHeight');
+			}
+		});
+	});
+	
+	function orgClicked(node){
+		$("#user-org-tree").tree('toggle', node.target);
+		userTable.datagrid("clearSelections");
+		searchUser();
+	}
+		
+	function add(){
+		var addDialog = $("<div></div>").dialog({
+			title: '添加用户',
+			width: 900,
+			height: 450,
+			modal: true,
+			iconCls: "fa fa-pencil-square-o",
+			href: '/user/toAdd',
+			onLoad: function(){
+				var selectedNode = $("#user-org-tree").tree("getSelected");
+				var selectedOrgId = "";
+				if (selectedNode != null){
+					selectedOrgId = selectedNode.id;
+					var userParentTree = $("#user-parent").combotree("tree");
+					var userParentOrgNode = userParentTree.tree("find", selectedNode.id);
+					if (userParentOrgNode != null){
+						$("#user-parent").combotree('setValue', selectedNode.id);
+						$("#user-parent").combotree('setText', selectedNode.text);
+					} else {
+						userParentTree.tree("append", {
+							data: [{ id: selectedNode.id, text: selectedNode.text, state: 'closed' }]
+						});
+						userParentOrgNode = userParentTree.tree("find", selectedNode.id);
+						$("#user-parent").combotree('setValue', userParentOrgNode);
+						userParentTree.tree('select',userParentOrgNode.target);
+						userParentOrgNode.target.style.display='none';
+					}
+				}
+
+				$.get("/user/findDefaultInfo?orgId=" + selectedOrgId, function(data){
+					$("#user-password").textbox('setValue', data.defaultPassword);
+					$("#user-orderNo").numberbox('setValue', data.nextOrderNo);
+				});
+			},
+			onClose : function() {
+                $(this).dialog('destroy');
+            },
+			buttons: [
+				{ 
+					text: '保存', 
+					iconCls: 'fa fa-save', 
+					handler: function(){
+						submitUserForm("add-user-form", addDialog, "/user/save");
+					} 
+				},
+				{ 
+					text: '关闭', 
+					iconCls: 'fa fa-close', 
+					handler: function() { 
+						addDialog.dialog('destroy'); 
+					}
+				}
+			]
+		});
+	}
+	
+	function edit(){
+		var selectedRows = $("#user-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要编辑的记录。", "warning");
+		} else if (selectedRows.length > 1){
+			$.messager.alert("提示信息", "您只能选择一条记录进行操作。", "warning");
+		} else {
+			var editDialog = $("<div></div>").dialog({
+				title: '修改用户',
+				width: 940,
+				height: 650,
+				modal: true,
+				iconCls: "fa fa-pencil-square-o",
+				href: '/user/toEdit',
+				onClose : function() {
+	                $(this).dialog('destroy');
+	            },
+				onLoad: function(){
+					$.ajax({
+						url: '/user/findUserWithRoleIdsById',
+						data: { id: userTable.datagrid("getSelections")[0].id },
+						type: 'get',
+						dataType: 'json',
+						success: function(data){
+							var user = data.user;
+							$("#user-id").val(user.id);
+							if (user.org != null){
+								var userParentTree = $("#user-parent").combotree("tree");
+								var userParentOrgNode = userParentTree.tree("find", user.org.id);
+								if (userParentOrgNode != null){
+									$("#user-parent").combotree('setValue', user.org.id);	
+									$("#user-parent").combotree('setText', user.org.name);	
+								} else {
+									userParentTree.tree("append", {
+										data: [{ id: user.org.id, text: user.org.name, state: 'closed' }]
+									});
+									userParentOrgNode = userParentTree.tree("find", user.org.id);
+									$("#user-parent").combotree('setValue', userParentOrgNode);
+									userParentTree.tree('select',userParentOrgNode.target);
+									userParentOrgNode.target.style.display='none';
+								}
+							}
+							if (user.headImage != null && user.headImage != ""){
+								$("#user-head-image").attr("src", user.headImage);
+							} else {
+								$("#user-head-image").attr("src", "/global/img/default_user_icon.png");
+							}
+							if (user.signImage != null && user.signImage != ""){
+								$("#user-sign-image").attr("src", user.signImage);
+							} else {
+								$("#user-sign-image").remove();
+							}
+							$("#user-username").textbox('setValue', user.username);
+							$("#user-realName").textbox('setValue', user.realName);
+							$("#user-staffCode").textbox('setValue', user.staffCode);
+							$("#user-email").textbox('setValue', user.email);
+							$("#user-phone").textbox('setValue', user.phone);
+							$("#user-idCard").textbox('setValue', user.idCard);
+							$("#user-address").textbox('setValue', user.address);
+							$("#user-enable").val(user.enable);
+							$("#user-orderNo").numberbox('setValue', user.orderNo);
+							if (data.roleIds != null && data.roleIds.length > 0){
+								$("#user-roles").combobox('setValues', data.roleIds.split(","));
+							}
+						}
+					});	
+				},
+				buttons: [
+					{ 
+						text: '保存', 
+						iconCls: 'fa fa-save', 
+						handler: function(){
+							submitUserForm("edit-user-form", editDialog, "/user/update");
+						} 
+					},
+					{ 
+						text: '关闭', 
+						iconCls: 'fa fa-close', 
+						handler: function(){ 
+							editDialog.dialog('destroy'); 
+						} 
+					}
+				]
+			});
+		}
+	}
+	
+	function dataRemove(){
+		var selectedRows = userTable.datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要删除的记录。", "warning");
+		} else {
+			$.messager.confirm('删除确认', '您是否确认要删除选中的记录？', function(r){
+				if (r){
+					var ids = new Array();
+					$.each(selectedRows, function(i, n){
+						ids[i] = n.id;
+					});
+					
+					$.ajax({
+						url: '/user/delete',
+						data: { "ids[]": ids },
+						type: 'post',
+						dataType: 'json',
+						success: function(data){
+							if (data.result){
+								$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+								userTable.datagrid("reload");
+								userTable.datagrid("clearSelections");
+							} else {
+								$.messager.alert("提示信息", data.msg, "error");
+							}
+						}
+					});	
+				}
+			});
+		}
+	}
+
+	function resetPassword(){
+		var selectedRows = userTable.datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要重置的用户信息。", "warning");
+		} else {
+			$.messager.confirm('操作确认', '您是否确认要重置这些用户的密码？', function(r){
+				if (r){
+					var ids = new Array();
+					$.each(selectedRows, function(i, n){
+						ids[i] = n.id;
+					});
+
+					$.ajax({
+						url: '/user/resetPassword',
+						data: { "ids[]": ids },
+						type: 'post',
+						dataType: 'json',
+						success: function(data){
+							if (data.result){
+								$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+								userTable.datagrid("clearSelections");
+							} else {
+								$.messager.alert("提示信息", data.msg, "error");
+							}
+						}
+					});
+				}
+			});
+		}
+	}
+	
+	function importUsers(){
+		var importDialog = $("#user-import-dialog").dialog({
+			title: '导入用户信息',
+			width: 630,
+			height: 260,
+			modal: true,
+			iconCls: "fa fa-pencil-square-o",
+			buttons: [
+				{ 
+					text: '导入', 
+					iconCls: 'fa fa-save', 
+					handler: function(){
+						$("#user-import-form").form('submit', {
+							url: '/user/importUsers',
+							onSubmit: function(){
+								return $(this).form("validate");
+							},
+							success: function(data){
+								data = $.parseJSON(data);
+								if (data.result){
+									importDialog.dialog("close");
+									$.messager.alert("提示信息", data.msg, "info");
+									//$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+									$("#user-table").datagrid("reload");
+									$("#user-table").datagrid("clearSelections");
+									$("#user-import-form").form('clear');
+								} else {
+									$.messager.alert("提示信息", data.msg, "error");
+								}
+							}
+						});
+					} 
+				},
+				{ 
+					text: '关闭', 
+					iconCls: 'fa fa-close', 
+					handler: function() { 
+						importDialog.dialog('close'); 
+					}
+				}
+			]
+		});
+	}
+	
+	function setEnable(){
+		changeEnableState(1);
+	}
+	
+	function setDisable(){
+		changeEnableState(0);
+	}
+	
+	function changeEnableState(state){
+		var stateStr = state == 0 ? "禁用" : "启用";
+		var selectedRows = userTable.datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要"+ stateStr +"的用户。", "warning");
+		} else {
+			$.messager.confirm('操作确认', '您是否确认要'+ stateStr +'选中的用户？', function(r){
+				if (r){
+					var ids = new Array();
+					$.each(selectedRows, function(i, n){
+						ids[i] = n.id;
+					});
+					
+					$.ajax({
+						url: '/user/updateEnableState',
+						data: { "enable": state, "ids[]": ids },
+						type: 'post',
+						dataType: 'json',
+						success: function(data){
+							if (data.result){
+								$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+								userTable.datagrid("reload");
+								userTable.datagrid("clearSelections");
+							} else {
+								$.messager.alert("提示信息", data.msg, "error");
+							}
+						}
+					});	
+				}
+			});
+		}
+	}
+	
+	function submitUserForm(formId, dialog, url){
+		$("#" + formId).form('submit', {
+			url: url,
+			onSubmit: function(){
+				return $(this).form("validate");
+			},
+			success: function(data){
+				data = $.parseJSON(data);
+				if (data.result){
+					dialog.dialog("destroy");
+					$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+					userTable.datagrid("reload");
+					userTable.datagrid("clearSelections");
+				} else {
+					$.messager.alert("提示信息", data.msg, "error");
+				}
+			}
+		});
+	}
+	
+	function searchUser(){
+		var selectedNode = $("#user-org-tree").tree("getSelected"); 
+		userTable.datagrid('load', {
+			'username': $("#user-usernameKey").textbox('getValue'),
+			'realNamePyCode': $("#user-realNameKey").textbox('getValue'),
+			'enable': $("#user-enableKey").combobox('getValue'),
+			'orgId': selectedNode == null ? '' : selectedNode.id
+		});
+	}
+	
+	//启动定时器，判断datagrid现有的行数，每50ms执行一次
+	var timer = window.setInterval(function(){
+	    var data = userTable.datagrid('getRows');
+	    if(data.length > 0){
+	        // 判断图片加载状况，加载完成后回调
+	        isImgLoad(function(){
+	            // 加载完成执行
+	            userTable.datagrid('fixRowHeight');
+	        });
+	        //将定时器停止
+	        clearInterval(timer)
+	    }
+	},50);
+
+	var t_img; // 图片判断定时器
+	var isLoad = true; // 控制变量
+
+	// 判断图片加载的函数
+	function isImgLoad(callback){
+	    // 注意我的图片类名都是ftPic，因为我只需要处理ftPic。其它图片可以不管。
+	    // 查找所有图，迭代处理
+	    $('img').each(function(){
+	        // 找到为0就将isLoad设为false，并退出each
+	        if(this.height === 0){
+	            isLoad = false;
+	            return false;
+	        }
+	    });
+	    // 为true，没有发现为0的。加载完毕
+	    if(isLoad){
+	        clearTimeout(t_img); // 清除定时器
+	        // 回调函数
+	        callback();
+	    // 为false，因为找到了没有加载完成的图，将调用定时器递归
+	    }else{
+	        isLoad = true;
+	        t_img = setTimeout(function(){
+	            isImgLoad(callback); // 递归扫描
+	        },500); // 我这里设置的是500毫秒就扫描一次，可以自己调整
+	    }
+	}
+	</script>
+</body>
+</html>

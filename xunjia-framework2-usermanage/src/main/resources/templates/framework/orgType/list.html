@@ -1,0 +1,231 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:xunjia="http://www.thymeleaf.org">
+	
+<head>
+	<div th:replace="framework/include/head::head"></div>
+</head>
+
+<body>
+	<table id="org-type-table"></table>
+	<div id="org-type-datagrid-tools" class="datagrid-toolbar">
+		<xunjia:button th:menu-id="${menuId}" perm-code="orgType:save" />
+		<xunjia:button th:menu-id="${menuId}" perm-code="orgType:update" />
+		<xunjia:button th:menu-id="${menuId}" perm-code="orgType:delete" />
+		<xunjia:button th:menu-id="${menuId}" perm-code="orgType:enable" />
+		<xunjia:button th:menu-id="${menuId}" perm-code="orgType:disable" />
+	</div>
+	<script th:inline="none">
+	$(function(){
+		$("#org-type-table").datagrid({
+			url: '/orgType/findOrganizationTypes',
+			idField: 'id',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: true,
+			pageSize: 20,
+			rownumbers: true,
+			toolbar: "#org-type-datagrid-tools",
+			columns: [[
+				{
+					field: 'id',
+					checkbox: true
+				}, {
+					field: 'name',
+					title: '组织类型名称',
+					width: 80
+				}, {
+					field: 'icon',
+					title: '组织类型图标',
+					width: 80,
+					formatter: function(value, row, index){
+						return "<i class='"+ value +"'></i>";
+					}
+				}, {
+					field: 'orderNo',
+					title: '排序号',
+					width: 80
+				}
+			]]
+		});
+	});
+		
+	function add(){
+		var addDialog = $("<div></div>").dialog({
+			title: '添加组织类型',
+			width: 600,
+			height: 260,
+			modal: true,
+			iconCls: "fa fa-pencil-square-o",
+			href: '/orgType/toAdd',
+			onClose : function() {
+                $(this).dialog('destroy');
+            },
+			buttons: [
+				{ 
+					text: '保存', 
+					iconCls: 'fa fa-save', 
+					handler: function(){
+						submitOrgTypeForm("add-org-type-form", addDialog, "/orgType/save");
+					} 
+				},
+				{ 
+					text: '关闭', 
+					iconCls: 'fa fa-close', 
+					handler: function() { 
+						addDialog.dialog('destroy'); 
+					}
+				}
+			]
+		});
+	}
+	
+	function edit(){
+		var selectedRows = $("#org-type-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要编辑的记录。", "warning");
+		} else if (selectedRows.length > 1){
+			$.messager.alert("提示信息", "您只能选择一条记录进行操作。", "warning");
+		} else {
+			var editDialog = $("<div></div>").dialog({
+				title: '编辑组织类型',
+				width: 600,
+				height: 260,
+				modal: true,
+				iconCls: "fa fa-pencil-square-o",
+				href: '/orgType/toEdit',
+				onLoad: function(){
+					$.ajax({
+						url: '/orgType/findById',
+						data: { id: selectedRows[0].id },
+						type: 'get',
+						dataType: 'json',
+						success: function(data){
+							$("#org-type-id").val(data.id);
+							$("#org-type-name").textbox('setValue', data.name);
+							$("#org-type-icon").textbox('setValue', data.icon);
+							$("#org-type-orderNo").numberbox('setValue', data.orderNo);
+						}
+					});
+				},
+				onClose : function() {
+	                $(this).dialog('destroy');
+	            },
+				buttons: [
+					{ 
+						text: '保存', 
+						iconCls: 'fa fa-save', 
+						handler: function(){
+							submitOrgTypeForm("edit-org-type-form", editDialog, "/orgType/save");
+						} 
+					},
+					{ 
+						text: '关闭', 
+						iconCls: 'fa fa-close', 
+						handler: function() { 
+							editDialog.dialog('destroy'); 
+						}
+					}
+				]
+			});
+		}
+	}
+	
+	function dataRemove(){
+		var selectedRows = $("#org-type-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要删除的记录。", "warning");
+		} else {
+			$.messager.confirm('删除确认', '您是否确认要删除选中的记录？', function(r){
+				if (r){
+					var ids = new Array();
+					$.each(selectedRows, function(i, n){
+						ids[i] = n.id;
+					});
+					
+					$.ajax({
+						url: '/orgType/delete',
+						data: { "ids[]": ids },
+						type: 'post',
+						dataType: 'json',
+						success: function(data){
+							if (data.result){
+								$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+								$("#org-type-table").datagrid("reload");
+								$("#org-type-table").datagrid("clearSelections");
+							} else {
+								$.messager.alert("提示信息", data.msg, "error");
+							}
+						}
+					});	
+				}
+			});
+		}
+	}
+	
+	function setEnable(){
+		changeEnableState(1);
+	}
+	
+	function setDisable(){
+		changeEnableState(0);
+	}
+	
+	function changeEnableState(state){
+		var stateStr = state == 0 ? "禁用" : "启用";
+		var selectedRows = $("#org-type-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要"+ stateStr +"的记录。", "warning");
+		} else {
+			$.messager.confirm('操作确认', '您是否确认要'+ stateStr +'选中的记录？', function(r){
+				if (r){
+					var ids = new Array();
+					$.each(selectedRows, function(i, n){
+						ids[i] = n.id;
+					});
+					
+					$.ajax({
+						url: '/orgType/updateEnableState',
+						data: { "enable": state, "ids[]": ids },
+						type: 'post',
+						dataType: 'json',
+						success: function(data){
+							if (data.result){
+								$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+								$("#org-type-table").datagrid("reload");
+								$("#org-type-table").datagrid("clearSelections");
+							} else {
+								$.messager.alert("提示信息", data.msg, "error");
+							}
+						}
+					});	
+				}
+			});
+		}
+	}
+	
+	function submitOrgTypeForm(formId, dialog, url){
+		$("#" + formId).form('submit', {
+			url: url,
+			onSubmit: function(){
+				return $(this).form("validate");
+			},
+			success: function(data){
+				data = $.parseJSON(data);
+				if (data.result){
+					dialog.dialog("destroy");
+					$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+					$("#org-type-table").datagrid("reload");
+					$("#org-type-table").datagrid("clearSelections");
+				} else {
+					$.messager.alert("提示信息", data.msg, "error");
+				}
+			}
+		});
+	}
+	</script>
+</body>
+</html>

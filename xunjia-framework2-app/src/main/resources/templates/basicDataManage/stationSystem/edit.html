@@ -1,0 +1,49 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:bf="http://www.thymeleaf.org">
+	
+<div class="table-container">
+	<form id="edit-form" method="post">
+		<input type="hidden" id="indicator-id" name="id" value="0" />
+		<input type="hidden" id="professional-system-code" name="professionalSystemCode" />
+		<input type="hidden" id="station-system-code" name="stationSystemCode" />
+		<input type="hidden" id="station-system-name" name="stationSystemName" />
+		<input type="hidden" id="station-type" name="stationType" />
+		<input type="hidden" id="select-node-type" />
+		<input type="hidden" id="indicator-original-name" name="originalName" />
+		<table class="edit-table">
+			<tr>
+				<th>站：</th>
+				<td indicator-code>
+					<select class="easyui-combotree" id="indicator-code-select" data-options="
+						width: 240,
+						url: '/org/getOrgTree',
+						textField: 'name',
+						valueField: 'id'
+					">
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<th>评价指标名称：</th>
+				<td>
+					<input class="easyui-textbox" id="evaluation-index-name" name="evaluationIndexName" data-options="required:false,width:240" />
+				</td>
+			</tr>
+			<tr>
+				<th>评价指标级别：</th>
+				<td>
+					<input class="easyui-textbox" id="evaluation-index-level" name="evaluationIndexLevel" data-options="required:false,width:240" />
+				</td>
+			</tr>
+			<tr>
+				<th>权重：</th>
+				<td>
+					<input class="easyui-textbox" id="indicator-weights" name="weights" data-options="required:false,width:240" />
+				</td>
+			</tr>
+		</table>
+	</form>
+</div>
+</html>

@@ -1,0 +1,402 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:xunjia="http://www.thymeleaf.org">
+	
+<head>
+	<div th:replace="framework/include/head::head"></div>
+</head>
+
+<body>
+	<div class="easyui-layout" fit="true">
+		<div data-options="region:'west',width:210">
+			<div id="resource-tree"></div>
+		</div>
+		<div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+			<label>资源名称：</label><input id="resource-name-key" class="easyui-textbox" data-options="width:200" />
+			<label>资源类型：</label><input id="resource-type-key" class="easyui-combobox" data-options="url:'',panelHeight:'auto',width:200" />
+			<label>可用状态：</label>
+			<select id="resource-enable-key" class="easyui-combobox" data-options="panelHeight:'auto',width:200">
+				<option value="-1" selected>全部</option>
+				<option value="1">启用</option>
+				<option value="0">禁用</option>
+			</select>
+			<label>分级授权：</label>
+			<select id="resource-allow-grant-key" class="easyui-combobox" data-options="panelHeight:'auto',width:200">
+				<option value="-1" selected>全部</option>
+				<option value="1">允许</option>
+				<option value="0">禁止</option>
+			</select>
+			<a href="javascript:" onclick="searchResource();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+		</div>
+		<div data-options="region:'center'">
+			<table id="resource-table"></table>
+			<div id="resource-datagrid-toolbar" class="datagrid-toolbar">
+				<xunjia:button th:menu-id="${menuId}" perm-code="resource:saveMenu" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="resource:saveBtn" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="resource:update" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="resource:delete" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="resource:enable" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="resource:disable" />
+			</div>
+		</div>
+	</div>
+
+	
+	<script th:inline="none">
+	var currNodeId = null;
+	$(function(){
+		$("#resource-table").datagrid({
+			url: '/resource/findResources',
+			idField: 'id',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: true,
+			pageSize: 20,
+			rownumbers: true,
+			toolbar: "#resource-datagrid-toolbar",
+			columns: [[
+				{
+					field: 'id',
+					checkbox: true
+				},
+				{
+					field: 'category',
+					title: '资源大类',
+					width: 50
+				},
+				{
+					field: 'name',
+					title: '资源名称',
+					width: 75
+				}, {
+					field: 'code',
+					title: '资源编码',
+					width: 60
+				}, {
+					field: 'type',
+					title: '资源类型',
+					width: 30
+				}, {
+					field: 'url',
+					title: '链接地址',
+					width: 80
+				}, {
+					field: 'fontIcon',
+					title: '字符图标',
+					width: 30,
+					formatter: function(value, row, index){
+						return value == null ? "" : "<i class='"+ value +"'></i>";
+					}
+				}, {
+					field: 'onclick',
+					title: '点击事件',
+					width: 50
+				}, {
+					field: 'orderNo',
+					title: '排序号',
+					width: 25
+				}, {
+					field: 'integrateType',
+					title: '集成方式',
+					width: 35,
+					formatter: function(value, row, index){
+						if (row.type == "菜单"){
+							return value;
+						}
+					}
+				}, {
+					field: 'permissionCode',
+					title: '权限码',
+					width: 60
+				}, {
+					field: 'enable',
+					title: '可用状态',
+					width: 30,
+					formatter: function(value, row, index){
+						return value == 0 ? "禁用" : "启用";
+					}
+				}, {
+					field: 'allowGrant',
+					title: '允许分级授权',
+					width: 40,
+					formatter: function(value, row, index){
+						return value == 0 ? "不允许" : "允许";
+					}
+				}
+			]]
+		});
+		
+		$("#resource-tree").tree({
+			url: '/resource/findResourceTree',
+			animate: true,
+			onClick: function(node){
+				$("#resource-table").datagrid('clearSelections');
+				searchResource();
+				currNodeId = node.id;
+			},
+			onLoadSuccess: function(node, data){
+				if (currNodeId != null){
+					var currNode = $(this).tree("find", currNodeId);
+					$(this).tree("expandTo", currNode.target).tree("select", currNode.target);
+				}
+			}
+		});
+	});
+
+	function addMenu(){
+		toAdd('/resource/toAddMenu');
+	}
+
+	function addBtn(){
+		toAdd('/resource/toAddBtn');
+	}
+
+	function toAdd(url){
+		var addDialog = $("<div></div>").dialog({
+			title: '添加资源',
+			width: 630,
+			height: 550,
+			modal: true,
+			iconCls: "fa fa-pencil-square-o",
+			href: url,
+			onLoad: function(){
+				var selectedNode = $("#resource-tree").tree("getSelected");
+				if (selectedNode != null){
+					$("#resource-parent").combotree("setValue", selectedNode.id);
+				}
+			},
+			onClose : function() {
+                $(this).dialog('destroy');
+            },
+			buttons: [
+				{ 
+					text: '保存', 
+					iconCls: 'fa fa-save', 
+					handler: function(){
+						submitResourceForm("add-resource-form", addDialog, "/resource/save");
+					} 
+				},
+				{ 
+					text: '关闭', 
+					iconCls: 'fa fa-close', 
+					handler: function() { 
+						addDialog.dialog('destroy'); 
+					}
+				}
+			]
+		});
+	}
+	
+	function edit(){
+		var selectedRows = $("#resource-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要编辑的记录。", "warning");
+		} else if (selectedRows.length > 1){
+			$.messager.alert("提示信息", "您只能选择一条记录进行操作。", "warning");
+		} else {
+			var resourceType = selectedRows[0].type;
+			var url = '/resource/';
+			if (resourceType == '菜单'){
+				url += 'toEditMenu';
+			} else if (resourceType == '按钮'){
+				url += 'toEditBtn';
+			}
+
+			var editDialog = $("<div></div>").dialog({
+				title: '修改资源信息',
+				width: 630,
+				height: 550,
+				modal: true,
+				iconCls: "fa fa-pencil-square-o",
+				href: url,
+				onClose : function() {
+	                $(this).dialog('destroy');
+	            },
+				onLoad: function(){
+					$.ajax({
+						url: '/resource/findById',
+						data: { id: selectedRows[0].id },
+						type: 'get',
+						dataType: 'json',
+						success: function(data){
+							$("#resource-id").val(data.id);
+							$("#resource-enable").val(data.enable);
+							if (data.parent != null){
+								$("#resource-parent").combotree('setValue', data.parent.id);	
+								$("#resource-parent").combotree('setText', data.parent.name);	
+							}
+							if (data.type == "菜单"){
+							$("#resource-category").combobox('setValue', data.category);
+							$("#resource-name").textbox('setValue', data.name);
+							$("#resource-code").textbox('setValue', data.code);
+							$("#resource-allowGrant").combobox('setValue', data.allowGrant);
+							$("#resource-fontIcon").textbox('setValue', data.fontIcon);
+							$("#resource-imgIcon").filebox('setValue', data.imgIcon);
+							$("#resource-permissionCode").textbox('setValue', data.permissionCode);
+							$("#resource-orderNo").numberbox('setValue', data.orderNo);
+								$("#resource-integrate-type").combobox('setValue', data.integrateType);
+								$("#resource-url").textbox('setValue', data.url);
+							} else if (data.type == "按钮"){
+								$("#resource-code").textbox('setValue', data.code);
+								$("#resource-name").textbox('setValue', data.name);
+								$("#resource-style").textbox('setValue', data.style);
+								$("#resource-onclick").textbox('setValue', data.onclick);
+								$("#resource-permissionCode").textbox('setValue', data.permissionCode);
+								$("#resource-fontIcon").textbox('setValue', data.fontIcon);
+							}
+						}
+					});	
+				},
+				buttons: [
+					{ 
+						text: '保存', 
+						iconCls: 'fa fa-save', 
+						handler: function(){
+							submitResourceForm("edit-resource-form", editDialog, "/resource/update");
+						} 
+					},
+					{ 
+						text: '关闭', 
+						iconCls: 'fa fa-close', 
+						handler: function(){ 
+							$("#resource-table").datagrid("reload");
+							editDialog.dialog('destroy'); 
+						} 
+					}
+				]
+			});
+		}
+	}
+	
+	function removeData(){
+		var selectedRows = $("#resource-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要编辑的记录。", "warning");
+		} else {
+			$.messager.confirm('删除确认', '您是否确认要删除选中的记录？', function(r){
+				if (r){
+					var ids = new Array();
+					$.each(selectedRows, function(i, n){
+						ids[i] = n.id;
+					});
+					
+					$.ajax({
+						url: '/resource/delete',
+						data: { "ids[]": ids },
+						type: 'post',
+						dataType: 'json',
+						success: function(data){
+							if (data.result){
+								$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+								$("#resource-table").datagrid("reload");
+								$("#resource-table").datagrid("clearSelections");
+								$("#resource-tree").tree("reload");
+							} else {
+								$.messager.alert("提示信息", data.msg, "error");
+							}
+						}
+					});	
+				}
+			});
+		}
+	}
+	
+	function submitResourceForm(formId, dialog, url){
+		$("#" + formId).form('submit', {
+			url: url,
+			onSubmit: function(){
+				return $(this).form("validate");
+			},
+			success: function(data){
+				data = $.parseJSON(data);
+				if (data.result){
+					dialog.dialog("destroy");
+					$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+					$("#resource-table").datagrid("reload");
+					$("#resource-table").datagrid("clearSelections");
+					$("#resource-tree").tree("reload");
+				} else {
+					$.messager.alert("提示信息", data.msg, "error");
+				}
+			}
+		});
+	}
+	
+	function searchResource(){
+		var selectedNode = $("#resource-tree").tree("getSelected"); 
+		$("#resource-table").datagrid('load', {
+			'name': $("#resource-name-key").textbox('getValue'),
+			'type': $("#resource-type-key").combobox('getValue'),
+			'allowGrant': $("#resource-allow-grant-key").combobox('getValue'),
+			'enable': $("#resource-enable-key").textbox('getValue'),
+			'parentId': selectedNode == null ? '' : selectedNode.id
+		});
+	}
+	
+	function setEnable(){
+		submitChangeState(1);
+	}
+	
+	function setDisable(){
+		submitChangeState(0);
+	}
+	
+	function submitChangeState(state){
+		var selectedRows = $("#resource-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要编辑的记录。", "warning");
+		} else {
+			var ids = new Array();
+			$.each(selectedRows, function(i, n){
+				ids[i] = n.id;
+			});
+			$.ajax({
+				url: '/resource/updateState',
+				data: { "state": state, "ids[]": ids },
+				type: 'post',
+				dataType: 'json',
+				success: function(data){
+					$("#resource-table").datagrid("reload");
+					$("#resource-table").datagrid("clearSelections");
+				}
+			});
+		}
+	}
+
+	function showSelectFontIconDialog(){
+		var iconDialog = $("<div></div>").dialog({
+			title: '选择图标',
+			width: 1100,
+			height: 600,
+			modal: true,
+			iconCls: "fa fa-pencil-square-o",
+			href: '/fontIcon/toSelect',
+			onClose : function() {
+                $(this).dialog('destroy');
+            },
+			buttons: [
+				{
+					text: '保存',
+					iconCls: 'fa fa-save',
+					handler: function(){
+						$("#resource-fontIcon").textbox('setValue', selectedIcon);
+						iconDialog.dialog('destroy');
+					}
+				},
+				{
+					text: '关闭',
+					iconCls: 'fa fa-close',
+					handler: function() {
+						iconDialog.dialog('destroy');
+					}
+				}
+			]
+		});
+	}
+	
+	</script>
+</body>
+</html>

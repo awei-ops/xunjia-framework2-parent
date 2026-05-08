@@ -1,0 +1,61 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:bf="http://www.thymeleaf.org">
+<body>
+    <div class="easyui-layout" fit="true">
+        <div data-options="region:'center'">
+            <table id="display-benchmark-table"></table>
+        </div>
+    </div>
+
+    <script th:inline="none">
+        var obj = $('#dd').dialog('options');
+        var queryParams = obj["queryParams"];
+        var queryType =  queryParams['benchmarkType'];
+        $(function(){
+            $("#display-benchmark-table").datagrid({
+                url: '/benchmarks/getBenchmarksByType?type=' + queryType,
+                idField: 'code',
+                fit: true,
+                fitColumns: true,
+                striped: true,
+                loadMsg: '数据加载中，请稍候...',
+                pagination: false,
+                rownumbers: true,
+                columns: [[
+                    {
+                        field: 'name',
+                        title: '标杆名称',
+                        width: 80
+                    }, {
+                        field: 'code',
+                        title: '标杆编码',
+                        width: 60
+                    },{
+                        field: 'level',
+                        title: '标杆级别',
+                        width: 80
+                    }, {
+                        field: 'type',
+                        title: '标杆类别',
+                        width: 80
+                    },{
+					field: 'rightValue',
+					title: '插值最右端值',
+					width: 80
+                    },{
+                        field: 'leftValue',
+                        title: '插值最左端值',
+                        width: 80
+                    },{
+                        field: 'minScore',
+                        title: '最低分',
+                        width: 80
+                    }
+                ]]
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" xmlns:xunjia="http://www.thymeleaf.org">
+
+<head>
+	<div th:replace="framework/include/head::head"></div>
+	<script type="text/javascript" src="/global/js/ten-factory-formatter.js"></script>
+</head>
+
+<body>
+	<div class="easyui-layout" fit="true">
+		<div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+			<a>站名称：</a>
+			<select class="easyui-combobox" id="query-stations" data-options="
+                url:'/dmgc_y_tsz_new/getAll',
+                width: 150,
+                textField: 'mc',
+                valueField: 'eventId',
+                editable: true,
+                loadFilter : function (data) {
+                  if (data) {
+                      data.splice(0, 0, {mc: '全部', eventId: ''});
+                  }
+                  return data;
+              },
+            ">
+			</select>
+			<a href="javascript:" onclick="searchPageData();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+		</div>
+		<div data-options="region:'center'">
+			<table id="display-data-table"></table>
+		</div>
+	</div>
+
+	<script th:inline="none">
+		$(function () {
+			$("#display-data-table").datagrid({
+				url: '/dmgc_y_tsz_new/getPageData',
+				fit: true,
+				fitColumns: true,
+				striped: true,
+				loadMsg: '数据加载中，请稍候...',
+				pagination: true,
+				pageSize: 20,
+				rownumbers: true,
+				columns: [[
+					{ "field": "mc", "title": "名称", "width": 110 },
+					// { "field": "zlx", "title": "站类型", "width": 110 },
+					// { "field": "lylx", "title": "来液类型", "width": 110 },
+					// { "field": "gylc", "title": "工艺流程", "width": 110 },
+					// { "field": "ydtsfs", "title": "一段脱水工艺", "width": 110 },
+					{ "field": "ydsjgm", "title": "一段设计规模（m³/d)", "width": 110 },
+					// { "field": "edtsfs", "title": "二段脱水工艺", "width": 110 },
+					{ "field": "edsjgm", "title": "二段设计规模（m³/d)", "width": 110 },
+					// { "field": "sdtsfs", "title": "三段脱水工艺", "width": 110 },
+					{ "field": "sdsjgm", "title": "三段设计规模（m³/d)", "width": 110 },
+					{ "field": "wsylsjgm", "title": "外输油量设计规模（m³/d)", "width": 110 },
+					// { "field": "sgxyzs", "title": "管辖接转站数", "width": 110 },
+					// { "field": "yzlcyjs", "title": "直接管辖井数", "width": 110 },
+					// { "field": "yymbqk", "title": "原油密闭情况", "width": 110 },
+					// { "field": "cnfs", "title": "采暖方式", "width": 110 },
+					// { "field": "xffs", "title": "消防方式", "width": 110 },
+					// { "field": "jzmj", "title": "总建筑面积", "width": 110 },
+					// { "field": "jzjg", "title": "主题建筑结构", "width": 110 },
+					// { "field": "zdmj", "title": "占地面积", "width": 110 },
+					{ "field": "rfh", "title": "热负荷（%）", "width": 110 },
+					// { "field": "zjfh", "title": "装机负荷", "width": 110 },
+					// { "field": "zcdj", "title": "站场等级", "width": 110 },
+					// { "field": "sslhzmc", "title": "所属联合站名称", "width": 110 },
+					// { "field": "xywszmc", "title": "下游污水站名称", "width": 110 },
+					// { "field": "gtszmc", "title": "下游脱水站名称", "width": 110 },
+					// { "field": "gywzmc", "title": "下游原稳站名称", "width": 110 },
+					// { "field": "gykmc", "title": "下游油库名称", "width": 110 },
+					// { "field": "wzlydk", "title": "外站来液端口名称", "width": 110 },
+					{ "field": "tcrq", "title": "投产日期", "width": 110, formatter: dateFormatterToDay },
+					// { "field": "sfszh", "title": "是否数字化", "width": 110 },
+					// { "field": "sfwrzs", "title": "是否无人值守", "width": 110 },
+					// { "field": "ygrs", "title": "用工人数", "width": 110 },
+					{ "field": "sfbf", "title": "运行状态", "width": 110, formatter: stationRunStateFormatter },
+					{ "field": "bfrq", "title": "报废日期", "width": 110 },
+					// { "field": "zbhj", "title": "周边环境", "width": 110 },
+					// { "field": "dlwz", "title": "地理位置", "width": 110 },
+					// { "field": "yp", "title": "油品", "width": 110 },
+					// { "field": "xywszEventId", "title": "下游污水站id", "width": 110 },
+					// { "field": "gtszEventId", "title": "下游脱水站id", "width": 110 },
+					// { "field": "gywzEventId", "title": "下游原稳站id", "width": 110 },
+					// { "field": "gykEventId", "title": "下游油库id", "width": 110 },
+					// { "field": "sslhzEventId", "title": "所属联合站id", "width": 110 },
+					// { "field": "ssdwdm", "title": "所属单位代码", "width": 110 },
+					// { "field": "bz", "title": "备注", "width": 110 },
+					// { "field": "code", "title": "编码", "width": 110 }
+				]]
+			});
+		});
+
+		function searchPageData() {
+			$("#display-data-table").datagrid('load', {
+				'mc': $('#query-stations').combobox('getText') === '全部' ? '' : $('#query-stations').combobox('getText'),
+			});
+		}
+	</script>
+</body>
+
+</html>

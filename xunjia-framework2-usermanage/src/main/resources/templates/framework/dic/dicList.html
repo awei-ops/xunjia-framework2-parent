@@ -1,0 +1,537 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:xunjia="http://www.thymeleaf.org">
+	
+<head>
+	<div th:replace="framework/include/head::head"></div>
+</head>
+
+<body>
+	<div class="easyui-layout" fit="true">
+		<div data-options="region:'center',border:false,title:'字典类型',collapsible:false">
+			<div class="easyui-layout" fit="true">
+				<div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+					<input id="dicType-name" class="easyui-textbox" data-options="width:180,label:'分类名称：' ,labelAlign:'right',labelWidth:70" />
+					<input id="dicType-code" class="easyui-textbox" data-options="width:180,label:'分类编码：' ,labelAlign:'right',labelWidth:70" />
+					<a href="javascript:" onclick="searchDicType();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+				</div>
+				<div data-options="region:'center',border:false">
+					<table id="dic-type-list-table"></table>
+				</div>
+			</div>
+		</div>
+		<div data-options="region:'east',border:false,title:'字典内容',collapsible:false" style="width:55%;">
+			<div class="easyui-layout" fit="true">
+				<div data-options="region:'north',height:53,border:false" style="padding:10px 8px 10px 8px;overflow:hidden;">
+					<input id="dicContent-name" class="easyui-textbox" data-options="width:180,label:'内容名称：' ,labelAlign:'right',labelWidth:70" />
+					<input id="dicContent-code" class="easyui-textbox" data-options="width:180,label:'内容编码：' ,labelAlign:'right',labelWidth:70" />
+					<input id="dicContent-parent-code" class="easyui-textbox" data-options="width:180,label:'上级编码：' ,labelAlign:'right',labelWidth:70" />
+					<a href="javascript:" onclick="searchDicContent();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+				</div>
+				<div data-options="region:'center',border:false">
+					<table id="dic-content-list-table"></table>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div id="dic-type-datagrid-tools" class="datagrid-toolbar">
+		<xunjia:button th:menu-id="${menuId}" perm-code="dicType:save" />
+		<xunjia:button th:menu-id="${menuId}" perm-code="dicType:update" />
+		<xunjia:button th:menu-id="${menuId}" perm-code="dicType:delete" />
+		<xunjia:button th:menu-id="${menuId}" perm-code="dicType:import" />
+	</div>
+	<div id="dic-content-datagrid-tools" class="datagrid-toolbar">
+		<xunjia:button th:menu-id="${menuId}" perm-code="dicContent:save" />
+		<xunjia:button th:menu-id="${menuId}" perm-code="dicContent:update" />
+		<xunjia:button th:menu-id="${menuId}" perm-code="dicContent:delete" />
+		<xunjia:button th:menu-id="${menuId}" perm-code="dicContent:import" />
+	</div>
+	
+	<div id="dic-type-import-dialog">
+		<form id="dic-type-import-form" method="post" enctype="multipart/form-data">
+			<table class="edit-table">
+				<tr>
+					<th>数据文件：</th>
+					<td>
+						<input class="easyui-filebox" id="dicTypeFile" name="dicTypeFile"
+						data-options="editable:false,width:240,required:true,buttonText:'选择数据文件'" />
+					</td>
+				</tr>
+				<tr>
+					<th>数据模板：</th>
+					<td><a href="/template/字典分类模板.xlsx" target="_blank">点击下载数据模板</a></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	<div id="dic-content-import-dialog">
+		<form id="dic-content-import-form" method="post" enctype="multipart/form-data">
+			<table class="edit-table">
+				<tr>
+					<th>数据文件：</th>
+					<td>
+						<input class="easyui-filebox" id="dicContentFile" name="dicContentFile"
+						data-options="editable:false,width:240,required:true,buttonText:'选择数据文件'" />
+					</td>
+				</tr>
+				<tr>
+					<th>数据模板：</th>
+					<td><a href="/template/字典内容模板.xlsx" target="_blank">点击下载数据模板</a></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	<script th:inline="none">
+	var currTypeId = 0;
+	$(function(){
+		$("#dic-type-list-table").datagrid({
+			url: '/dicType/findDicTypes',
+			idField: 'id',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: true,
+			pageSize: 20,
+			rownumbers: true,
+			singleSelect: true,
+			toolbar: "#dic-type-datagrid-tools",
+			columns: [[
+				{
+					field: 'id',
+					checkbox: true
+				}, {
+					field: 'name',
+					title: '分类名称',
+					width: 80
+				}, {
+					field: 'pyCode',
+					title: '分类拼音码',
+					width: 80
+				}, {
+					field: 'code',
+					title: '分类编码',
+					width: 80
+				}, {
+					field: 'orderNo',
+					title: '排序号',
+					width: 80
+				}
+			]],
+			onClickRow: function(index, data){
+				currTypeId = data.id;
+				$("#dic-content-list-table").datagrid('load', {
+					'typeId': data.id
+				});
+			}
+		});
+		
+		$("#dic-content-list-table").datagrid({
+			url: '/dicContent/findDicContents',
+			idField: 'id',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: true,
+			pageSize: 20,
+			rownumbers: true,
+			toolbar: "#dic-content-datagrid-tools",
+			columns: [[
+				{
+					field: 'id',
+					checkbox: true
+				}, {
+					field: 'name',
+					title: '分类名称',
+					width: 80
+				}, {
+					field: 'pyCode',
+					title: '分类拼音码',
+					width: 80
+				}, {
+					field: 'code',
+					title: '分类编码',
+					width: 80
+				}, {
+					field: 'parentContent',
+					title: '上级内容',
+					width: 80,
+					formatter: function(value, row, index){
+						return value == null ? "" : value.name;
+					}
+				}, {
+					field: 'orderNo',
+					title: '排序号',
+					width: 80
+				}
+			]]
+		});
+	});
+	
+	function add(){
+		var addDialog = $("<div></div>").dialog({
+			title: '添加字典分类',
+			width: 630,
+			height: 260,
+			modal: true,
+			iconCls: "fa fa-pencil-square-o",
+			href: '/dicType/toAdd',
+			onClose : function() {
+                $(this).dialog('destroy');
+            },
+			buttons: [
+				{ 
+					text: '保存', 
+					iconCls: 'fa fa-save', 
+					handler: function(){
+						submitDicForm("add-dic-type-form", addDialog, "dic-type-list-table", "/dicType/save");
+					} 
+				},
+				{ 
+					text: '关闭', 
+					iconCls: 'fa fa-close', 
+					handler: function() { 
+						addDialog.dialog('destroy'); 
+					}
+				}
+			]
+		});
+	}
+	
+	function edit(){
+		var selectedRows = $("#dic-type-list-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要编辑的记录。", "warning");
+		} else if (selectedRows.length > 1){
+			$.messager.alert("提示信息", "您只能选择一条记录进行操作。", "warning");
+		} else {
+			var editDialog = $("<div></div>").dialog({
+				title: '编辑字典分类',
+				width: 630,
+				height: 260,
+				modal: true,
+				iconCls: "fa fa-pencil-square-o",
+				href: '/dicType/toEdit',
+				onClose : function() {
+	                $(this).dialog('destroy');
+	            },
+				onLoad: function(){
+					$.ajax({
+						url: '/dicType/findById',
+						data: { id: selectedRows[0].id },
+						type: 'get',
+						dataType: 'json',
+						success: function(data){
+							$("#dic-type-id").val(data.id);
+							$("#dic-type-name").textbox('setValue', data.name);
+							$("#dic-type-code").textbox('setValue', data.code);
+							$("#dic-type-orderNo").numberbox('setValue', data.orderNo);
+						}
+					});	
+				},
+				buttons: [
+					{ 
+						text: '保存', 
+						iconCls: 'fa fa-save', 
+						handler: function(){
+							submitDicForm("edit-dic-type-form", editDialog, "dic-type-list-table", "/dicType/update");
+						} 
+					},
+					{ 
+						text: '关闭', 
+						iconCls: 'fa fa-close', 
+						handler: function(){ 
+							editDialog.dialog('destroy'); 
+						} 
+					}
+				]
+			});
+		}
+	}
+	
+	function dataRemove(){
+		var selectedRows = $("#dic-type-list-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要编辑的记录。", "warning");
+		} else {
+			$.messager.confirm('删除确认', '您是否确认要删除选中的记录？', function(r){
+				if (r){
+					var ids = new Array();
+					$.each(selectedRows, function(i, n){
+						ids[i] = n.id;
+					});
+					
+					$.ajax({
+						url: '/dicType/delete',
+						data: { "ids[]": ids },
+						type: 'post',
+						dataType: 'json',
+						success: function(data){
+							if (data.result){
+								$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+								$("#dic-type-list-table").datagrid("reload");
+								$("#dic-type-list-table").datagrid("clearSelections");
+							} else {
+								$.messager.alert("提示信息", data.msg, "error");
+							}
+						}
+					});	
+				}
+			});
+		}
+	}
+	
+	function importDicTypes(){
+		var importDialog = $("#dic-type-import-dialog").dialog({
+			title: '导入字典分类',
+			width: 630,
+			height: 260,
+			modal: true,
+			iconCls: "fa fa-pencil-square-o",
+			buttons: [
+				{ 
+					text: '导入', 
+					iconCls: 'fa fa-save', 
+					handler: function(){
+						$("#dic-type-import-form").form('submit', {
+							url: '/dicType/importDicTypes',
+							onSubmit: function(){
+								return $(this).form("validate");
+							},
+							success: function(data){
+								data = $.parseJSON(data);
+								if (data.result){
+									importDialog.dialog("close");
+									$.messager.alert("提示信息", data.msg, "info");
+									//$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+									$("#dic-type-list-table").datagrid("reload");
+									$("#dic-type-list-table").datagrid("clearSelections");
+									$("#dic-type-import-dialog").form('clear');
+								} else {
+									$.messager.alert("提示信息", data.msg, "error");
+								}
+							}
+						});
+					} 
+				},
+				{ 
+					text: '关闭', 
+					iconCls: 'fa fa-close', 
+					handler: function() { 
+						importDialog.dialog('close'); 
+					}
+				}
+			]
+		});
+	}
+	
+	function searchDicType(){
+		$("#dic-type-list-table").datagrid('load', {
+			'name': $("#dicType-name").textbox('getValue'),
+			'code': $("#dicType-code").textbox('getValue')
+		});
+	}
+	
+	function submitDicForm(formId, dialog, tableId, url){
+		$("#" + formId).form('submit', {
+			url: url,
+			onSubmit: function(){
+				return $(this).form("validate");
+			},
+			success: function(data){
+				data = $.parseJSON(data);
+				if (data.result){
+					dialog.dialog("destroy");
+					$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+					$("#" + tableId).datagrid("reload");
+					$("#" + tableId).datagrid("clearSelections");
+				} else {
+					$.messager.alert("提示信息", data.msg, "error");
+				}
+			}
+		});
+	}
+	
+	/* ================== DicContent 字典内容 ================== */
+	function addDicContent(){
+		if (currTypeId == 0){
+			$.messager.alert("提示信息", "您未选择字典类型。", "warning");
+			return;
+		}
+		
+		var addDialog = $("<div></div>").dialog({
+			title: '添加字典内容',
+			width: 630,
+			height: 306,
+			modal: true,
+			iconCls: "fa fa-pencil-square-o",
+			href: '/dicContent/toAdd',
+			onLoad: function(){
+				$("#dic-content-type").val(currTypeId);
+			},
+			onClose : function() {
+                $(this).dialog('destroy');
+            },
+			buttons: [
+				{
+					text: '保存', 
+					iconCls: 'fa fa-save', 
+					handler: function(){
+						submitDicForm("add-dic-content-form", addDialog, "dic-content-list-table", "/dicContent/save");
+					} 
+				},
+				{ 
+					text: '关闭', 
+					iconCls: 'fa fa-close', 
+					handler: function() { 
+						addDialog.dialog('destroy'); 
+					}
+				}
+			]
+		});
+	}
+	
+	function editDicContent(){
+		var selectedRows = $("#dic-content-list-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要编辑的记录。", "warning");
+		} else if (selectedRows.length > 1){
+			$.messager.alert("提示信息", "您只能选择一条记录进行操作。", "warning");
+		} else {
+			var editDialog = $("<div></div>").dialog({
+				title: '编辑字典内容',
+				width: 630,
+				height: 306,
+				modal: true,
+				iconCls: "fa fa-pencil-square-o",
+				href: '/dicContent/toEdit',
+				onClose : function() {
+	                $(this).dialog('destroy');
+	            },
+				onLoad: function(){
+					$.ajax({
+						url: '/dicContent/findById',
+						data: { id: selectedRows[0].id },
+						type: 'get',
+						dataType: 'json',
+						success: function(data){
+							$("#dic-content-id").val(data.id);
+							$("#dic-content-type").val(data.type.id);
+							$("#dic-content-name").textbox('setValue', data.name);
+							$("#dic-content-code").textbox('setValue', data.code);
+							$("#dic-content-orderNo").numberbox('setValue', data.orderNo);
+							if (data.parentContent != null){
+								$("#dic-content-parent").textbox('setValue', data.parentContent.code);
+							}
+						}
+					});	
+				},
+				buttons: [
+					{ 
+						text: '保存', 
+						iconCls: 'fa fa-save', 
+						handler: function(){
+							submitDicForm("edit-dic-content-form", editDialog, "dic-content-list-table", "/dicContent/update");
+						} 
+					},
+					{ 
+						text: '关闭', 
+						iconCls: 'fa fa-close', 
+						handler: function(){ 
+							editDialog.dialog('destroy'); 
+						} 
+					}
+				]
+			});
+		}
+	}
+	
+	function dicContentRemove(){
+		var selectedRows = $("#dic-content-list-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要编辑的记录。", "warning");
+		} else {
+			$.messager.confirm('删除确认', '您是否确认要删除选中的记录？', function(r){
+				if (r){
+					var ids = new Array();
+					$.each(selectedRows, function(i, n){
+						ids[i] = n.id;
+					});
+					
+					$.ajax({
+						url: '/dicContent/delete',
+						data: { "ids[]": ids },
+						type: 'post',
+						dataType: 'json',
+						success: function(data){
+							if (data.result){
+								$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+								$("#dic-content-list-table").datagrid("reload");
+								$("#dic-content-list-table").datagrid("clearSelections");
+							} else {
+								$.messager.alert("提示信息", data.msg, "error");
+							}
+						}
+					});	
+				}
+			});
+		}
+	}
+	
+	function importDicContents(){
+		var importDialog = $("#dic-content-import-dialog").dialog({
+			title: '导入字典内容',
+			width: 630,
+			height: 260,
+			modal: true,
+			iconCls: "fa fa-pencil-square-o",
+			buttons: [
+				{ 
+					text: '导入', 
+					iconCls: 'fa fa-save', 
+					handler: function(){
+						$("#dic-content-import-form").form('submit', {
+							url: '/dicContent/importDicContents',
+							onSubmit: function(){
+								return $(this).form("validate");
+							},
+							success: function(data){
+								data = $.parseJSON(data);
+								if (data.result){
+									importDialog.dialog("close");
+									$.messager.alert("提示信息", data.msg, "info");
+									//$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+									$("#dic-content-list-table").datagrid("reload");
+									$("#dic-content-list-table").datagrid("clearSelections");
+									$("#dic-content-import-dialog").form('clear');
+								} else {
+									$.messager.alert("提示信息", data.msg, "error");
+								}
+							}
+						});
+					} 
+				},
+				{ 
+					text: '关闭', 
+					iconCls: 'fa fa-close', 
+					handler: function() { 
+						importDialog.dialog('close'); 
+					}
+				}
+			]
+		});
+	}
+	
+	function searchDicContent(){
+		$("#dic-content-list-table").datagrid('load', {
+			'name': $("#dicContent-name").textbox('getValue'),
+			'code': $("#dicContent-code").textbox('getValue'),
+			'typeId': currTypeId
+		});
+	}
+	</script>
+</body>
+</html>

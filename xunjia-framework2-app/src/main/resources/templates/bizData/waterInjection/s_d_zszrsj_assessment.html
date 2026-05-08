@@ -1,0 +1,205 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" xmlns:xunjia="http://www.thymeleaf.org">
+
+<head>
+    <div th:replace="framework/include/head::head"></div>
+    <script type="text/javascript" src="/global/js/echarts/echarts.min.js"></script>
+</head>
+
+<body>
+    <div class="easyui-layout" fit="true">
+        <div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+            <input id="query-assessmentDate-key" class="easyui-datebox" editable="false" value="true"
+                data-options="width:240,label:'考核时间：' ,labelAlign:'right',labelWidth:90" />
+        </div>
+        <div data-options="region:'center'">
+            <table id="display-data-table"></table>
+            <div id="user-operation-bar" class="datagrid-toolbar">
+                <a>评价周期：</a>
+                <input type="radio" checked="checked" name="cycle" value="日">日
+                <input type="radio" name="cycle" value="月">月
+                <input type="radio" name="cycle" value="年">年
+                <a href="javascript:" onclick="searchPageData();" class="easyui-linkbutton"
+                    iconCls="fa fa-calculator">考核得分</a>
+                <a href="javascript:" onclick="benchmarkDetail();" class="easyui-linkbutton"
+                    iconCls="fa fa-cog">指标明细</a>
+                <a href="javascript:" onclick="test();" class="easyui-linkbutton" iconCls="fa fa-cog">绩效对比</a>
+                <xunjia:button th:menu-id="${menuId}" perm-code="dmgc_s_d_zszrsj:export" />
+            </div>
+        </div>
+    </div>
+
+    <script th:inline="none">
+        var myBenchmarkId = "";
+        $(function () {
+            $.ajax({
+                url: '/benchmarks/getByCode?code=zszzhdh',
+                type: 'get',
+                dataType: 'json',
+                success: function (data) {
+                    myBenchmarkId = data.id;
+                }
+            });
+            $("#display-data-table").datagrid({
+                url: '/dmgc_s_d_zszrsj/getAssessment',
+                fit: true,
+                fitColumns: false,
+                striped: true,
+                loadMsg: '数据加载中，请稍候...',
+                pagination: true,
+                pageSize: 20,
+                rownumbers: true,
+                queryParams: {
+                    cycle: $('input:radio:checked').val(),
+                    assessmentDate: $("#query-assessmentDate-key").datebox('getValue'),
+                    benchmarkId: myBenchmarkId
+                },
+                toolbar: "#user-operation-bar",
+                columns: [[
+                    { "field": "zmc", "title": "站名称", "width": 110 },
+                    { "field": "rq", "title": "日期", "width": 110 },
+                    { "field": "zhydl", "title": "综合用电量", "width": 110 },
+                    { "field": "zhdh", "title": "综合单耗", "width": 110 },
+                    { "field": "ssdwName", "title": "所属单位名称", "width": 110 },
+                    { "field": "zhdhScore", "title": "综合单耗得分", "width": 110 }
+                ]]
+            });
+        });
+
+        function benchmarkDetail() {
+            var editDialog = $("<div></div>").dialog({
+                title: '指标明细',
+                width: 630,
+                height: 400,
+                modal: true,
+                iconCls: "fa fa-pencil-square-o",
+                href: '/benchmarks/toEdit',
+                onClose: function () {
+                    $(this).dialog('destroy');
+                },
+                onLoad: function () {
+                    $.ajax({
+                        url: '/benchmarks/findById',
+                        data: { id: myBenchmarkId },
+                        type: 'get',
+                        dataType: 'json',
+                        success: function (data) {
+                            $("#benchmark-id").val(data.id);
+                            $("#indicator-original-code").val(data.code);
+                            $("#benchmark-name").textbox('setValue', data.name);
+                            $("#benchmark-code").textbox('setValue', data.code);
+                            $("#benchmark-level").textbox('setValue', data.level);
+                            $("#benchmark-type").textbox('setValue', data.type);
+                            $("#benchmark-right").numberbox('setValue', data.rightValue);
+                            $("#benchmark-left").numberbox('setValue', data.leftValue);
+                            $("#benchmark-minScore").numberbox('setValue', data.minScore);
+                        }
+                    });
+                },
+                buttons: [
+                    {
+                        text: '关闭',
+                        iconCls: 'fa fa-close',
+                        handler: function () {
+                            editDialog.dialog('destroy');
+                        }
+                    }
+                ]
+            });
+        }
+
+        function searchPageData() {
+            $("#display-data-table").datagrid('load', {
+                'cycle': $('input:radio:checked').val(),
+                'assessmentDate': $("#query-assessmentDate-key").datebox('getValue'),
+                'benchmarkId': myBenchmarkId,
+            });
+        }
+
+        function exportData() {
+            window.open("/dmgc_s_d_zszrsj/exportData");
+        }
+
+        function test() {
+            var editDialog = $("<div></div>").dialog({
+                title: '绩效对比',
+                width: 1400,
+                height: 550,
+                modal: true,
+                iconCls: "fa fa-pencil-square-o",
+                href: '/dmgc_s_d_zszrsj/toChart',
+                onClose: function () {
+                    $(this).dialog('destroy');
+                },
+                onLoad: function () {
+                    var myChart = echarts.init(document.getElementById('chart'));
+                    $.ajax({
+                        url: '/dmgc_s_d_zszrsj/getAssessment',
+                        data: {
+                            'cycle': $('input:radio:checked').val(),
+                            'assessmentDate': $("#query-assessmentDate-key").datebox('getValue'),
+                            'benchmarkId': myBenchmarkId,
+                            'page': 1,
+                            'rows': 999
+                        },
+                        type: 'get',
+                        dataType: 'json',
+                        success: function (response) {
+                            var xData = [];
+                            var sData = [];
+                            response.rows.map(item => {
+                                xData.push(item.zmc);
+                                sData.push(item.zhdhScore)
+                            })
+                            var option = {
+                                xAxis: {
+                                    type: 'category',
+                                    axisLabel: {
+                                        interval: 0,
+                                        formatter: val => {
+                                            let txt = val
+                                            if (val.length > 6) {
+                                                txt = val.substr(0, 6) + '...'
+                                            }
+                                            return txt
+                                        }
+                                    },
+                                    data: xData
+                                },
+                                legend: {
+                                    data: ['绩效']
+                                },
+                                yAxis: {
+                                    type: 'value'
+                                },
+                                series: [
+                                    {
+                                        data: sData,
+                                        type: 'bar',
+                                        showBackground: true,
+                                        backgroundStyle: {
+                                            color: 'rgba(1110, 1110, 1110, 0.2)'
+                                        }
+                                    }
+                                ]
+                            }
+                            myChart.setOption(option);
+                        }
+                    });
+                },
+                buttons: [
+                    {
+                        text: '关闭',
+                        iconCls: 'fa fa-close',
+                        handler: function () {
+                            editDialog.dialog('destroy');
+                        }
+                    }
+                ]
+            });
+        }
+
+    </script>
+</body>
+
+</html>

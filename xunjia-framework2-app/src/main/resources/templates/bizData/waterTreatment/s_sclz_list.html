@@ -1,0 +1,98 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" xmlns:xunjia="http://www.thymeleaf.org">
+
+<head>
+	<div th:replace="framework/include/head::head"></div>
+	<script type="text/javascript" src="/global/js/ten-factory-formatter.js"></script>
+</head>
+
+<body>
+	<div class="easyui-layout" fit="true">
+		<div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+			<a>站名称：</a>
+			<select class="easyui-combobox" id="query-stations" data-options="
+                url:'/dmgc_s_sclz/getAll',
+                width: 150,
+                textField: 'mc',
+                valueField: 'eventId',
+                editable: true,
+                loadFilter : function (data) {
+                  if (data) {
+                      data.splice(0, 0, {mc: '全部', eventId: ''});
+                  }
+                  return data;
+              },
+            ">
+			</select>
+			<a href="javascript:" onclick="searchPageData();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+		</div>
+		<div data-options="region:'center'">
+			<table id="display-data-table"></table>
+		</div>
+	</div>
+
+	<script th:inline="none">
+		$(function () {
+			$("#display-data-table").datagrid({
+				url: '/dmgc_s_sclz/getPageData',
+				fit: true,
+				fitColumns: true,
+				striped: true,
+				loadMsg: '数据加载中，请稍候...',
+				pagination: true,
+				pageSize: 20,
+				rownumbers: true,
+				columns: [[
+					{ "field": "mc", "title": "名称", "width": 110 },
+					{ "field": "tcrq", "title": "投产日期", "width": 110 },
+					// { "field": "zlx", "title": "站类型", "width": 110 },
+					{ "field": "sjgm", "title": "设计规模（m³/d)", "width": 110 },
+					// { "field": "gylc", "title": "工艺流程", "width": 110 },
+					// { "field": "lsszlx", "title": "来水税制类型", "width": 110 },
+					{ "field": "sjcshyl", "title": "设计出水含油量（mg/L)", "width": 110 },
+					{ "field": "sjcsxfwgthl", "title": "设计出水悬浮固体含量（mg/L)", "width": 140 },
+					{ "field": "sjcsljzz", "title": "设计出水粒径中值（μm）", "width": 110 },
+					{ "field": "wsksl", "title": "外输口数量", "width": 110 },
+					{ "field": "gsfx", "title": "供水方向", "width": 110 },
+					// { "field": "csyslsksl", "title": "采出原水来水口数量", "width": 110 },
+					// { "field": "csyslszmc", "title": "采出原水来水站名称", "width": 110 },
+					// { "field": "ptzlsksl", "title": "普通站来水口数量", "width": 110 },
+					// { "field": "ptslszmc", "title": "普通水来水战名称", "width": 110 },
+					// { "field": "sffzcjlsl", "title": "是否分站采集来水量", "width": 110 },
+					// { "field": "sffdcjcksz", "title": "是否分段采集出口水质", "width": 110 },
+					// { "field": "cnfs", "title": "采暖方式", "width": 110 },
+					// { "field": "xffs", "title": "消防方式", "width": 110 },
+					// { "field": "jzmj", "title": "总建筑面积", "width": 110 },
+					// { "field": "jzjg", "title": "主体建筑结构", "width": 110 },
+					// { "field": "zdmj", "title": "占地面积", "width": 110 },
+					// { "field": "zjfh", "title": "装机负荷", "width": 110 },
+					// { "field": "dlwz", "title": "地理位置", "width": 110 },
+					// { "field": "bz", "title": "备注", "width": 110 },
+					// { "field": "ssdwdm", "title": "所属单位代码", "width": 110 },
+					// { "field": "gsfxEventId", "title": "供水方向id", "width": 110 },
+					{ "field": "sslhzmc", "title": "所属联合站名称", "width": 110 },
+					// { "field": "code", "title": "编码", "width": 110 },
+					// { "field": "sslhzid", "title": "所属联合站id", "width": 110 },
+					{ "field": "bfrq", "title": "报废日期", "width": 110 },
+					{ "field": "yxzt", "title": "运行状态", "width": 110, formatter: stationRunStateFormatter },
+					// { "field": "zx", "title": "站型", "width": 110 },
+					// { "field": "jczt", "title": "集成状态", "width": 110 },
+					// { "field": "sfszh", "title": "是否数字化", "width": 110 },
+					// { "field": "sfwrzs", "title": "是否无人值守", "width": 110 },
+					// { "field": "ygrs", "title": "用工人数", "width": 110 },
+					// { "field": "zbhj", "title": "周边环境", "width": 110 }
+				]]
+			});
+		});
+
+		function searchPageData() {
+			$("#display-data-table").datagrid('load', {
+				'mc': $('#query-stations').combobox('getText') === '全部' ? '' : $('#query-stations').combobox('getText'),
+			});
+		}
+
+
+	</script>
+</body>
+
+</html>

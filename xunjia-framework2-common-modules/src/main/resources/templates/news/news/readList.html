@@ -1,0 +1,54 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:xunjia="http://www.thymeleaf.org">
+	
+<head>
+	<div th:replace="framework/include/head::head"></div>
+</head>
+	
+<body>
+	<input type="hidden" id="menuId" th:value="${menuId}" />
+	<input type="hidden" id="theme" th:value="${theme}" />
+	<input type="hidden" id="typeId" th:value="${typeId}" />
+	<table id="news-table"></table>
+</body>
+<script th:inline="none">
+	$(function(){
+		$("#news-table").datagrid({
+			url: '/news/findNews?typeId=' + $("#typeId").val(),
+			idField: 'id',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: true,
+			pageSize: 20,
+			rownumbers: true,
+			toolbar: "#newsDgTools",
+			columns: [[
+				{
+					field: 'title',
+					title: '新闻',
+					width: 300,
+					formatter: function(value, row){
+						return "<a href='javascript:' onclick=\"read('"+ row.id +"');\">"+ value +"</a>";
+					}
+				}, {
+					field: 'readCount',
+					title: '阅读量',
+					width: 40
+				}, {
+					field: 'publishDate',
+					title: '上传日期',
+					width: 60
+				}
+			]]
+		});
+	});
+
+	function read(id){
+		window.open('/news/read?id=' + id);
+	}
+</script>
+</html>

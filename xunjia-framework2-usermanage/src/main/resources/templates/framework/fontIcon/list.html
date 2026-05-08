@@ -1,0 +1,278 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:xunjia="http://www.thymeleaf.org">
+	
+<head>
+	<div th:replace="framework/include/head::head"></div>
+</head>
+
+<body>
+	<div class="easyui-layout" fit="true">
+		<div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+			<input id="code-key" class="easyui-textbox" data-options="width:240,label:'图标代码：' ,labelAlign:'right',labelWidth:80" />
+			<select id="type-key" class="easyui-combobox" data-options="
+				url: '/dicContent/findByTypeCodeWithAll?typeCode=FONT_ICON_TYPE',
+				textField: 'name',
+				valueField: 'code',
+				width:240,
+				panelHeight:'auto',
+				editable:false,
+				label:'图标分类：',
+				labelAlign:'right',
+				labelWidth:70,
+				value: '',
+			"></select>
+			<a href="javascript:" onclick="searchFontIcon();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+		</div>
+		<div data-options="region:'center'">
+			<table id="font-icon-table"></table>
+			<div id="font-icon-datagrid-tools" class="datagrid-toolbar">
+				<xunjia:button th:menu-id="${menuId}" perm-code="fontIcon:save" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="fontIcon:update" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="fontIcon:import" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="fontIcon:delete" />
+			</div>
+		</div>
+	</div>
+
+	<div id="font-icon-import-dialog">
+		<form id="font-icon-import-form" method="post" enctype="multipart/form-data">
+			<table class="edit-table">
+				<tr>
+					<th>数据文件：</th>
+					<td>
+						<input class="easyui-filebox" id="dataFile" name="dataFile"
+							   data-options="editable:false,width:240,required:true,buttonText:'选择数据文件'" />
+					</td>
+				</tr>
+				<tr>
+					<th>数据模板：</th>
+					<td><a href="/fontIcon/downloadImportTemplate" target="_blank">点击下载数据模板</a></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+
+	<script th:inline="none">
+	$(function(){
+		$("#font-icon-table").datagrid({
+			url: '/fontIcon/findFontIcons',
+			idField: 'id',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: true,
+			pageSize: 20,
+			rownumbers: true,
+			toolbar: "#font-icon-datagrid-tools",
+			columns: [[
+				{
+					field: 'id',
+					checkbox: true
+				}, {
+					field: 'code',
+					title: '图标',
+					width: 80,
+					formatter: function(value, row, index){
+						return "<i class='"+ value +"'></i> &emsp; " + value;
+					}
+				}, {
+					field: 'typeName',
+					title: '图标分类',
+					width: 80
+				}
+			]]
+		});
+	});
+		
+	function add(){
+		var addDialog = $("<div></div>").dialog({
+			title: '添加图标',
+			width: 600,
+			height: 260,
+			modal: true,
+			iconCls: "fa fa-pencil-square-o",
+			href: '/fontIcon/toAdd',
+			onClose : function() {
+                $(this).dialog('destroy');
+            },
+			buttons: [
+				{ 
+					text: '保存', 
+					iconCls: 'fa fa-save', 
+					handler: function(){
+						submitfontIconForm("form1", addDialog, "/fontIcon/save");
+					} 
+				},
+				{ 
+					text: '关闭', 
+					iconCls: 'fa fa-close', 
+					handler: function() { 
+						addDialog.dialog('destroy'); 
+					}
+				}
+			]
+		});
+	}
+	
+	function edit(){
+		var selectedRows = $("#font-icon-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要编辑的记录。", "warning");
+		} else if (selectedRows.length > 1){
+			$.messager.alert("提示信息", "您只能选择一条记录进行操作。", "warning");
+		} else {
+			var editDialog = $("<div></div>").dialog({
+				title: '编辑组织类型',
+				width: 600,
+				height: 260,
+				modal: true,
+				iconCls: "fa fa-pencil-square-o",
+				href: '/fontIcon/toEdit',
+				onLoad: function(){
+					$.ajax({
+						url: '/fontIcon/findById',
+						data: { id: selectedRows[0].id },
+						type: 'get',
+						dataType: 'json',
+						success: function(data){
+							$("#id").val(data.id);
+							$("#code").textbox('setValue', data.code);
+							$("#typeCode").combobox('setValue', data.typeCode);
+							$("#typeName").val(data.typeName);
+						}
+					});
+				},
+				onClose : function() {
+	                $(this).dialog('destroy');
+	            },
+				buttons: [
+					{ 
+						text: '保存', 
+						iconCls: 'fa fa-save', 
+						handler: function(){
+							submitfontIconForm("form1", editDialog, "/fontIcon/update");
+						} 
+					},
+					{ 
+						text: '关闭', 
+						iconCls: 'fa fa-close', 
+						handler: function() { 
+							editDialog.dialog('destroy'); 
+						}
+					}
+				]
+			});
+		}
+	}
+	
+	function dataRemove(){
+		var selectedRows = $("#font-icon-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要删除的记录。", "warning");
+		} else {
+			$.messager.confirm('删除确认', '您是否确认要删除选中的记录？', function(r){
+				if (r){
+					var ids = new Array();
+					$.each(selectedRows, function(i, n){
+						ids[i] = n.id;
+					});
+					
+					$.ajax({
+						url: '/fontIcon/delete',
+						data: { "ids[]": ids },
+						type: 'post',
+						dataType: 'json',
+						success: function(data){
+							if (data.result){
+								$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+								$("#font-icon-table").datagrid("reload");
+								$("#font-icon-table").datagrid("clearSelections");
+							} else {
+								$.messager.alert("提示信息", data.msg, "error");
+							}
+						}
+					});	
+				}
+			});
+		}
+	}
+	
+	function submitfontIconForm(formId, dialog, url){
+		$("#" + formId).form('submit', {
+			url: url,
+			onSubmit: function(){
+				return $(this).form("validate");
+			},
+			success: function(data){
+				data = $.parseJSON(data);
+				if (data.result){
+					dialog.dialog("destroy");
+					$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+					$("#font-icon-table").datagrid("reload");
+					$("#font-icon-table").datagrid("clearSelections");
+				} else {
+					$.messager.alert("提示信息", data.msg, "error");
+				}
+			}
+		});
+	}
+
+	function dataImport(){
+		var importDialog = $("#font-icon-import-dialog").dialog({
+			title: '导入图标',
+			width: 630,
+			height: 260,
+			modal: true,
+			iconCls: "fa fa-pencil-square-o",
+			buttons: [
+				{
+					text: '导入',
+					iconCls: 'fa fa-save',
+					handler: function(){
+						$("#font-icon-import-form").form('submit', {
+							url: '/fontIcon/importIcons',
+							onSubmit: function(){
+								return $(this).form("validate");
+							},
+							success: function(data){
+								data = $.parseJSON(data);
+								if (data.result){
+									importDialog.dialog("close");
+									$.messager.alert("提示信息", data.msg, "info");
+									$("#font-icon-table").datagrid("reload");
+									$("#font-icon-table").datagrid("clearSelections");
+									$("#org-import-dialog").form('clear');
+								} else {
+									$.messager.alert("提示信息", data.msg, "error");
+								}
+							}
+						});
+					}
+				},
+				{
+					text: '关闭',
+					iconCls: 'fa fa-close',
+					handler: function() {
+						importDialog.dialog('close');
+					}
+				}
+			]
+		});
+	}
+
+	function searchFontIcon(){
+		$("#font-icon-table").datagrid('load', {
+			'type': $("#type-key").combobox('getValue'),
+			'code': $("#code-key").textbox('getValue')
+		});
+	}
+
+	function typeChanged(newValue, oldValue){
+		$("#typeName").val(newValue.name);
+	}
+	</script>
+</body>
+</html>

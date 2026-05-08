@@ -1,0 +1,110 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:bf="http://www.thymeleaf.org">
+
+
+<div class="table-container">
+    <form id="add-form" method="post">
+        <input type="hidden" id="monitoring-typeName" name="typeName" />
+        <table class="edit-table">
+            <tr>
+                <th>分组值上限(X< 或 X<=)：</th>
+                <td>
+                    <input id="monitoring-valueMax" name="valueMax" class="easyui-numberbox" data-options="min:0,precision:2,width:240" />
+                </td>
+            </tr>
+            <tr>
+                <th>分组值下限(X> 或 X>=)：</th>
+                <td>
+                    <input id="monitoring-valueMin" name="valueMin" class="easyui-numberbox" data-options="min:0,precision:2,width:240" />
+                </td>
+            </tr>
+            <tr>
+                <th>监测项目：</th>
+                <td>
+                    <input id="monitoring-monitoringItem" name="monitoringItem" class="easyui-textbox" data-options="required:true,width:240" />
+                </td>
+            </tr>
+            <tr>
+                <th>单位</th>
+                <td>
+                    <input id="monitoring-unitOfMeasurement" name="unitOfMeasurement" class="easyui-textbox" data-options="width:240" />
+                </td>
+            </tr>
+            <tr>
+                <th>监测项目限定值：</th>
+                <td>
+                    <input id="monitoring-monitoringItemLimit" name="monitoringItemLimit" class="easyui-numberbox" data-options="precision:2,required:true,width:240" />
+                </td>
+            </tr>
+            <tr>
+                <th>监测项目限定值对应分值：</th>
+                <td>
+                    <input id="monitoring-monitoringItemLimitScore" name="monitoringItemLimitScore" class="easyui-numberbox" data-options="min:0,precision:2,required:true,width:240" value="60"/>
+                </td>
+            </tr>
+            <tr>
+                <th>监测项目节能(标杆)值：</th>
+                <td>
+                    <input id="monitoring-monitoringItemEnergy" name="monitoringItemEnergy" class="easyui-numberbox" data-options="min:0,precision:2,required:true,width:240" />
+                </td>
+            </tr>
+            <tr>
+                <th>监测项目节能值(标杆)对应分值：</th>
+                <td>
+                    <input id="monitoring-monitoringItemEnergyScore" name="monitoringItemEnergyScore" class="easyui-numberbox" data-options="min:0,precision:2,required:true,width:240" value="80"/>
+                </td>
+            </tr>
+            <tr>
+                <th>监测项目最低评价：</th>
+                <td>
+                    <input id="monitoring-itemMinEvaluation" name="itemMinEvaluation" class="easyui-textbox" data-options="required:true,width:240" value="不合格"/>
+                </td>
+            </tr>
+            <tr>
+                <th>监测项目中等评价：</th>
+                <td>
+                    <input id="monitoring-itemMidEvaluation" name="itemMidEvaluation" class="easyui-textbox" data-options="required:true,width:240" value="合格"/>
+                </td>
+            </tr>
+            <tr>
+                <th>监测项目最高评价：</th>
+                <td>
+                    <input id="monitoring-itemMaxEvaluation" name="itemMaxEvaluation" class="easyui-textbox" data-options="width:240" value="良好" />
+                </td>
+            </tr>
+            <tr>
+                <th>监测项目最小值：</th>
+                <td>
+                    <input id="monitoring-monitoringItemMin" name="monitoringItemMin" class="easyui-numberbox" data-options="min:0,precision:2,required:true,width:240" value="0"/>
+                </td>
+            </tr>
+            <tr>
+                <th>监测项目最小值对应分值：</th>
+                <td>
+                    <input id="monitoring-monitoringItemMinScore" name="monitoringItemMinScore" class="easyui-numberbox" data-options="min:0,precision:2,width:240" value="0" />
+                </td>
+            </tr>
+            <tr>
+                <th>监测项目最大值：</th>
+                <td>
+                    <input id="monitoring-monitoringItemMax" name="monitoringItemMax" class="easyui-numberbox" data-options="min:0,precision:2,required:true,width:240" value="100"/>
+                </td>
+            </tr>
+            <tr>
+                <th>监测项目最大值对应分值：</th>
+                <td>
+                    <input id="monitoring-monitoringItemMaxScore" name="monitoringItemMaxScore" class="easyui-numberbox" data-options="min:0,precision:2,width:240" value="100" />
+                </td>
+            </tr>
+            <tr>
+                <th>排序：</th>
+                <td>
+                    <input id="monitoring-orderNo" name="orderNo" class="easyui-numberbox" data-options="min:1,width:240" value="1" />
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+</html>

@@ -1,0 +1,387 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:xunjia="http://www.thymeleaf.org">
+	
+<head>
+	<div th:replace="framework/include/head::head"></div>
+</head>
+
+<body>
+	<div class="easyui-layout" fit="true">
+		<div data-options="region:'west',width:210">
+			<div id="org-tree" class="easyui-tree" data-options="
+				url: '/org/getOrgTree',
+				animate: true,
+				onClick: orgClicked
+			"></div>
+		</div>
+		<div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+			<input id="org-pyCode-key" class="easyui-textbox" data-options="width:240,label:'名称拼音码：' ,labelAlign:'right',labelWidth:80" />
+			<input id="org-code-key" class="easyui-textbox" data-options="width:240,label:'组织代码：' ,labelAlign:'right',labelWidth:80" />
+			<select id="org-enable-key" class="easyui-combobox" data-options="width:240,panelHeight:'auto',editable:false,label:'用户状态：',labelAlign:'right',labelWidth:70">
+				<option value="-1" selected>全部</option>
+				<option value="1">启用</option>
+				<option value="0">禁用</option>
+			</select>
+			<a href="javascript:" onclick="searchOrganization();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+		</div>
+		<div data-options="region:'center'">
+			<table id="org-table"></table>
+			<div id="org-datagrid-toolbar" class="datagrid-toolbar">
+				<xunjia:button th:menu-id="${menuId}" perm-code="org:save" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="org:update" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="org:delete" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="org:enable" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="org:disable" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="org:import" />
+			</div>
+		</div>
+	</div>
+	
+	<div id="org-import-dialog">
+		<form id="org-import-form" method="post" enctype="multipart/form-data">
+			<table class="edit-table">
+				<tr>
+					<th>数据文件：</th>
+					<td>
+						<input class="easyui-filebox" id="orgFile" name="orgFile"
+						data-options="editable:false,width:240,required:true,buttonText:'选择数据文件'" />
+					</td>
+				</tr>
+				<tr>
+					<th>数据模板：</th>
+					<td><a href="/template/组织机构模板.xlsx" target="_blank">点击下载数据模板</a></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+
+	<script th:inline="none">
+	$(function(){
+		$("#org-table").datagrid({
+			url: '/org/findOrganizations',
+			idField: 'id',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: true,
+			pageSize: 20,
+			rownumbers: true,
+			toolbar: "#org-datagrid-toolbar",
+			columns: [[
+				{
+					field: 'id',
+					checkbox: true
+				},
+				{
+					field: 'name',
+					title: '组织名称',
+					width: 80
+				}, {
+					field: 'code',
+					title: '组织代码',
+					width: 60
+				}, {
+					field: 'pyCode',
+					title: '拼音码',
+					width: 80
+				}, {
+					field: 'orderNo',
+					title: '排序号',
+					width: 80
+				}, {
+					field: 'type',
+					title: '组织类型',
+					width: 80,
+					formatter: function(value, row, index){
+						return value.name;
+					}
+				}, {
+					field: 'enable',
+					title: '状态',
+					width: 80,
+					formatter: function(value, row, index){
+						return value == 0 ? "禁用" : "启用";
+					}
+				}
+			]]
+		});
+	});
+	
+	function add(){
+		var selectedRows = $("#org-table").datagrid("getSelections");
+		if (selectedRows.length > 1){
+			$.messager.alert("提示信息", "您只能选择一个组织机构。", "warning");
+			return;
+		}
+		
+		var addDialog = $("<div></div>").dialog({
+			title: '编辑数据',
+			width: 630,
+			height: 340,
+			modal: true,
+			iconCls: "fa fa-pencil-square-o",
+			href: '/org/toAdd',
+			onLoad: function(){
+				$("#org-enable").val("1");
+				var selectedNode = $("#org-tree").tree("getSelected");
+				var selectedOrgId = "";
+				if (selectedNode!= null){
+					selectedOrgId = selectedNode.id;
+					var orgParentTree = $("#org-parent").combotree("tree");
+					var orgNode = orgParentTree.tree("find", selectedNode.id);
+					if (orgNode != null){
+						$("#org-parent").combotree('setValue', orgNode.id);
+					} else {
+						orgParentTree.tree("append", {
+							data: [{ id: selectedNode.id, text: selectedNode.text, state: 'closed' }]
+						});
+						orgNode = orgParentTree.tree("find", selectedNode.id);
+						$("#org-parent").combotree('setValue', orgNode);
+						orgParentTree.tree('select',orgNode.target);
+						orgNode.target.style.display='none';
+					}
+				}
+
+				$.get("/org/findDefaultInfo", function(data){
+					$("#org-orderNo").numberbox('setValue', data.nextOrderNo);
+				});
+			},
+			onClose : function() {
+                $(this).dialog('destroy');
+            },
+			buttons: [
+				{ 
+					text: '保存',
+					iconCls: 'fa fa-save', 
+					handler: function(){
+						submitOrgForm("add-org-form", addDialog, "/org/save");
+					} 
+				},
+				{ 
+					text: '关闭', 
+					iconCls: 'fa fa-close', 
+					handler: function() { 
+						addDialog.dialog('destroy'); 
+					}
+				}
+			]
+		});
+	}
+	
+	function edit(){
+		var selectedRows = $("#org-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要编辑的记录。", "warning");
+		} else if (selectedRows.length > 1){
+			$.messager.alert("提示信息", "您只能选择一条记录进行操作。", "warning");
+		} else {
+			var editDialog = $("<div></div>").dialog({
+				title: '编辑数据',
+				width: 630,
+				height: 340,
+				modal: true,
+				iconCls: "fa fa-pencil-square-o",
+				href: '/org/toEdit',
+				onClose : function() {
+	                $(this).dialog('destroy');
+	            },
+				onLoad: function(){
+					$.ajax({
+						url: '/org/findById',
+						data: { id: selectedRows[0].id },
+						type: 'get',
+						dataType: 'json',
+						success: function(data){
+							$("#org-id").val(data.id);
+							$("#org-enable").val(data.enable);
+							if (data.parent != null){
+								$("#org-parent").combotree('setValue', data.parent.id);
+								$("#org-parent").combotree('setText', data.parent.name);
+							}
+							$("#org-name").textbox('setValue', data.name);
+							$("#org-code").textbox('setValue', data.code);
+							$("#org-type").combobox('setValue', data.type.id);
+							$("#org-orderNo").numberbox('setValue', data.orderNo);
+						}
+					});	
+				},
+				buttons: [
+					{ 
+						text: '保存', 
+						iconCls: 'fa fa-save', 
+						handler: function(){
+							submitOrgForm("edit-org-form", editDialog, "/org/update");
+						} 
+					},
+					{ 
+						text: '关闭', 
+						iconCls: 'fa fa-close', 
+						handler: function(){ 
+							editDialog.dialog('destroy'); 
+						} 
+					}
+				]
+			});
+		}
+	}
+	
+	function dataRemove(){
+		var selectedRows = $("#org-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要删除的记录。", "warning");
+		} else {
+			$.messager.confirm('删除确认', '您是否确认要删除选中的记录？', function(r){
+				if (r){
+					var ids = new Array();
+					$.each(selectedRows, function(i, n){
+						ids[i] = n.id;
+					});
+					
+					$.ajax({
+						url: '/org/delete',
+						data: { "ids[]": ids },
+						type: 'post',
+						dataType: 'json',
+						success: function(data){
+							if (data.result){
+								$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+								$("#org-table").datagrid("reload");
+								$("#org-table").datagrid("clearSelections");
+								$("#org-tree").tree("reload");
+							} else {
+								$.messager.alert("提示信息", data.msg, "error");
+							}
+						}
+					});	
+				}
+			});
+		}
+	}
+	
+	function importOrganizations(){
+		var importDialog = $("#org-import-dialog").dialog({
+			title: '导入组织机构',
+			width: 630,
+			height: 260,
+			modal: true,
+			iconCls: "fa fa-pencil-square-o",
+			buttons: [
+				{ 
+					text: '导入', 
+					iconCls: 'fa fa-save', 
+					handler: function(){
+						$("#org-import-form").form('submit', {
+							url: '/org/importOrganizations',
+							onSubmit: function(){
+								return $(this).form("validate");
+							},
+							success: function(data){
+								data = $.parseJSON(data);
+								if (data.result){
+									importDialog.dialog("close");
+									$.messager.alert("提示信息", data.msg, "info");
+									$("#org-table").datagrid("reload");
+									$("#org-table").datagrid("clearSelections");
+									$("#org-tree").tree("reload");
+									$("#org-import-dialog").form('clear');
+								} else {
+									$.messager.alert("提示信息", data.msg, "error");
+								}
+							}
+						});
+					} 
+				},
+				{ 
+					text: '关闭', 
+					iconCls: 'fa fa-close', 
+					handler: function() { 
+						importDialog.dialog('close'); 
+					}
+				}
+			]
+		});
+	}
+	
+	function setEnable(){
+		changeEnableState(1);
+	}
+	
+	function setDisable(){
+		changeEnableState(0);
+	}
+	
+	function changeEnableState(state){
+		var stateStr = state == 0 ? "禁用" : "启用";
+		var selectedRows = $("#org-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要"+ stateStr +"的组织。", "warning");
+		} else {
+			$.messager.confirm('操作确认', '您是否确认要'+ stateStr +'选中的组织？', function(r){
+				if (r){
+					var ids = new Array();
+					$.each(selectedRows, function(i, n){
+						ids[i] = n.id;
+					});
+					
+					$.ajax({
+						url: '/org/updateEnableState',
+						data: { "enable": state, "ids[]": ids },
+						type: 'post',
+						dataType: 'json',
+						success: function(data){
+							if (data.result){
+								$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+								$("#org-table").datagrid("reload");
+								$("#org-table").datagrid("clearSelections");
+							} else {
+								$.messager.alert("提示信息", data.msg, "error");
+							}
+						}
+					});	
+				}
+			});
+		}
+	}
+	
+	function submitOrgForm(formId, dialog, url){
+		$("#" + formId).form('submit', {
+			url: url,
+			onSubmit: function(){
+				return $(this).form("validate");
+			},
+			success: function(data){
+				data = $.parseJSON(data);
+				if (data.result){
+					dialog.dialog("destroy");
+					$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+					$("#org-table").datagrid("reload");
+					$("#org-table").datagrid("clearSelections");
+					$("#org-tree").tree("reload");
+				} else {
+					$.messager.alert("提示信息", data.msg, "error");
+				}
+			}
+		});
+	}
+	
+	function orgClicked(node){
+		$("#org-tree").tree("toggle", node.target);
+		$("#org-table").datagrid("clearSelections");
+		searchOrganization();
+	}
+	
+	function searchOrganization(){
+		var selectedNode = $("#org-tree").tree("getSelected"); 
+		$("#org-table").datagrid('load', {
+			'pyCode': $("#org-pyCode-key").textbox('getValue'),
+			'enable': $("#org-enable-key").combobox('getValue'),
+			'code': $("#org-code-key").textbox('getValue'),
+			'parentId': selectedNode == null ? '' : selectedNode.id
+		});
+	}
+	</script>
+</body>
+</html>

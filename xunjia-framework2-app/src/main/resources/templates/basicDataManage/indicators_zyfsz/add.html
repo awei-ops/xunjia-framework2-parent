@@ -1,0 +1,142 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:bf="http://www.thymeleaf.org">
+
+
+<div class="table-container">
+    <form id="add-form" method="post">
+        <input type="hidden" id="indicators-hidden-type" name="typeName" />
+        <input type="hidden" id="indicators-hidden-level" name="levelName" />
+        <input type="hidden" id="indicators-hidden-item" name="itemName" />
+        <table class="edit-table">
+            <tr>
+                <th>指标类别：</th>
+                <td>
+                    <select class="easyui-combobox" id="indicators-type" name="typeCode" data-options="
+						width: 240,
+						required:true,
+						textField: 'label',
+						valueField: 'value',
+                        editable: false,
+                        data: [{
+                            label: '转油（放水）站',
+                            value: 'zyfsz'
+                        }]
+					">
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th>指标级别：</th>
+                <td>
+                    <select class="easyui-combobox" id="indicators-level" name="levelCode" data-options="
+						width: 240,
+						required:true,
+						textField: 'label',
+						valueField: 'value',
+                        editable: false,
+                        data: [{
+                            label: '一级指标',
+                            value: 'level1'
+                        },{
+                            label: '二级指标',
+                            value: 'level2'
+                        },{
+                            label: '三级指标',
+                            value: 'level3'
+                        },{
+                            label: '五级指标',
+                            value: 'level5'
+                        }]
+					">
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th>指标项：</th>
+                <td>
+                    <select class="easyui-combobox" id="indicators-item" name="itemCode" data-options="
+						width: 240,
+						required:true,
+						textField: 'label',
+						valueField: 'value',
+                        editable: false,
+                        data: [{
+                            label: '技术指标',
+                            value: 'technical'
+                        },{
+                            label: '经济指标',
+                            value: 'economics'
+                        },{
+                            label: '泵机组技术指标',
+                            value: 'pump'
+                        },{
+                            label: '加热炉技术指标',
+                            value: 'heating'
+                        },{
+                            label: '输油泵技术指标',
+                            value: 'oil'
+                        },{
+                            label: '掺水泵技术指标',
+                            value: 'watermixing'
+                        },{
+                            label: '污油泵技术指标',
+                            value: 'dirtyoil'
+                        },{
+                            label: '外输炉技术指标',
+                            value: 'export_furnace'
+                        },{
+                            label: '掺水炉技术指标',
+                            value: 'water_mixing_furnace'
+                        },{
+                            label: '热洗炉技术指标',
+                            value: 'hot_washing_furnace'
+                        },{
+                            label: '采暖炉技术指标',
+                            value: 'heating_furnace'
+                        },{
+                            label: '泵机组效率',
+                            value: 'efficiency'
+                        },{
+                            label: '泵机组节流损失率',
+                            value: 'loss'
+                        },{
+                            label: '泵吨·百米耗电量',
+                            value: 'consume-power'
+                        },{
+                            label: '注水站综合单耗',
+                            value: 'comprehensive'
+                        },{
+                            label: '注水泵泵水单耗',
+                            value: 'pum-water'
+                        },{
+                            label: '加热炉热效率',
+                            value: 'jrlxl'
+                        },{
+                            label: '热负荷率',
+                            value: 'rfhl'
+                        },{
+                            label: '空气系数',
+                            value: 'kqxs'
+                        },{
+                            label: '排烟温度',
+                            value: 'pywd'
+                        },{
+                            label: '炉体外表面温度',
+                            value: 'ltbmwd'
+                        }]
+					">
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th>权重：</th>
+                <td>
+                    <input id="indicators-weight" class="easyui-numberbox" data-options="min:0,max:1,precision:2,required:true,width:240" name="weight" />
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+</html>

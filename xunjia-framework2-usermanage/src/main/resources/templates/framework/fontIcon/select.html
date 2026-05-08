@@ -1,0 +1,35 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:bf="http://www.thymeleaf.org">
+
+
+<div id="font-icon-tabs" class="easyui-tabs" fit="true">
+    <style>
+        .selectable { color:rgb(47,47,47); }
+    </style>
+    <div th:each="type,tStat:${fontTypes}" th:attr="title=|${type.name}|" style="padding:10px;">
+        <table class="edit-table">
+            <tr th:each="count:${#numbers.sequence(0, rows - 1)}">
+                <td th:each="icon1,iStat1:${fontIcons}"
+                    th:if="${iStat1.index ge count * 10 and iStat1.index lt (count * 10 + 10)}"
+                    style="text-align:center;padding-top:10px;padding-bottom:10px;" class="selectable">
+                    <i th:class="${icon1.code}" style="font-size:20px;"></i><br>
+                    <span th:text="${icon1.code}"></span>
+                </td>
+            </tr>
+        </table>
+
+    </div>
+</div>
+<script>
+    var selectedIcon = null;
+    $(function(){
+        $(".selectable").on("click", function(e){
+            $(".selectable").css("background-color", "#fff");
+            $(this).css("background-color", "rgb(254,163,86)");
+            selectedIcon = $(this).find("span").text();
+        });
+    });
+</script>
+</html>

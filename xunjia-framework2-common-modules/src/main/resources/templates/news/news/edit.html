@@ -1,0 +1,117 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org">
+<head>
+	<div th:replace="framework/include/head::head"></div>
+	<script type="text/javascript" charset="utf-8" src="/global/js/ueditor/ueditor.config.js"></script>
+    <script type="text/javascript" charset="utf-8" src="/global/js/ueditor/editor_api.js"></script>
+</head>
+<body>
+	<div class="easyui-layout" fit="true">
+		<div data-options="region:'west',width:210">
+			<div id="type-tree" class="easyui-tree" data-options="
+				url: '/newsType/getTypeTree',
+				animate: true,
+				onClick: typeClicked1
+			"></div>
+		</div>
+		<div data-options="region:'center'" style="overflow-x:hidden">
+			<div style="width:100%">
+				<form id="add-form" method="post">
+					<input type="hidden" id="id" name="id" th:value="${data.news.id}" />
+					<div style="width:100%;text-align:right;background-color:rgb(244,244,244);padding-top:3px;padding-bottom:3px;">
+						<a href="javascript:" onclick="saveNews();" class="easyui-linkbutton info" iconCls="fa fa-save" style="margin-right:1%;">提交</a>
+					</div>
+					<table class="edit-table">
+						<tr>
+							<th>新闻标题：</th>
+							<td><input class="easyui-textbox" id="title" name="title"
+								data-options="required:true,width:500" th:value="${data.news.title}" /></td>
+						</tr>
+						<tr>
+							<th>副标题：</th>
+							<td><input class="easyui-textbox" id="subTitle" name="subTitle"
+								data-options="width:500" th:value="${data.news.subTitle}" />
+							</td>
+						</tr>
+						<tr>
+							<th>副标题位置：</th>
+							<td>
+								<select class="easyui-combobox" id="subTitlePos" name="subTitlePos" data-options="editable:false,panelHeight:'auto',width:500">
+									<option value="0" th:selected="${data.news.subTitlePos == 0}">主标题下方</option>
+									<option value="1" th:selected="${data.news.subTitlePos == 1}">主标题上方</option>
+								</select>
+							</td>
+						</tr>
+						<tr>
+							<th>栏目：</th>
+							<td>
+								<input class="easyui-textbox" id="type" data-options="width:500,required:true,editable:false" th:value="${data.news.type.name}" />
+								<input type="hidden" id="typeId" name="type.id" th:value="${data.news.type.id}" />
+							</td>
+						</tr>
+					</table>
+					<script id="editor" name="content" type="text/plain" style="width:99%;height:450px;"></script>
+					
+				</form>
+			</div>
+		</div>
+	</div>
+	
+	<script th:inline="javascript">
+	
+	var editor = UE.getEditor('editor');
+	editor.ready(function() {
+		editor.setHeight(400);
+	    //设置编辑器的内容
+		editor.setContent([[${data.content}]]);
+	});
+	
+	UE.Editor.prototype._bkGetActionUrl = UE.Editor.prototype.getActionUrl;
+	UE.Editor.prototype.getActionUrl = function(action) {
+	    if (action == 'uploadimage' || action == 'uploadscrawl') {
+	        return '/imgUpload';
+	    } else {
+	        return this._bkGetActionUrl.call(this, action);
+	    }
+	}
+	
+	function typeClicked1(node){
+		if (node.id != null && node.id != ""){
+			$("#type").textbox('setValue', node.text);
+			$("#typeId").val(node.id);
+		}
+	}
+		
+	function clearForm(){
+		$("#title").textbox('setValue', '');
+		$("#subTitle").textbox('setValue', '');
+		$("#subTitlePos").combobox('setValue', "0");
+		editor.setContent('');
+	}
+		
+	function saveNews(){
+		submitForm();
+	}
+		
+	function submitForm(){
+		$("#add-form").form('submit', {
+			url: '/news/update',
+			onSubmit: function(){
+				return $(this).form("validate");
+			},
+			success: function(data){
+				data = $.parseJSON(data);
+				if (data.result){
+					parent.editSuccess(data.msg);
+				} else {
+					$.messager.alert("提示信息", data.msg, "error");
+				}
+			}
+		});
+	}
+	</script>
+
+</body>
+
+</html>

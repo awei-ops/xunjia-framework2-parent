@@ -1,0 +1,82 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:bf="http://www.thymeleaf.org">
+
+<div class="table-container">
+    <form id="edit-form" method="post">
+        <input type="hidden" id="indicators-hidden-id" name="id"/>
+        <input type="hidden" id="indicators-hidden-type" name="typeCode"/>
+        <input type="hidden" id="indicators-hidden-item" name="itemName"/>
+        <table class="edit-table">
+            <tr>
+                <th>指标级别：</th>
+                <td>
+                    <select class="easyui-combobox" id="indicators-level" name="levelCode" data-options="
+						width: 240,
+						required:true,
+						textField: 'label',
+						valueField: 'value',
+                        editable: false,
+                        mode:'local',
+                        onSelect:function(rec){
+                            $('#indicators-item').combobox('clear');
+                            $('#indicators-item').combobox('reload', '/indicators/getByTypeCodeAndLevelCode?typeCode='
+                                + $('#indicators-hidden-type').val()
+                                + '&levelCode=' + rec.value);
+                        },
+                        prompt:'请选择指标级别',
+                        filter: function(q, row){
+                            var opts = $(this).combobox('options');
+                            return row[opts.textField].indexOf(q) >= 0;
+                        },
+                        data: [{
+                            label: '一级指标',
+                            value: 'level1'
+                        },{
+                            label: '二级指标',
+                            value: 'level2'
+                        },{
+                            label: '三级指标',
+                            value: 'level3'
+                        },{
+                            label: '五级指标',
+                            value: 'level5'
+                        }]
+					">
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th>指标项：</th>
+                <td>
+                    <select class="easyui-combobox" id="indicators-item" name="itemCode" data-options="
+						width: 240,
+						required:true,
+						textField: 'itemName',
+						valueField: 'itemCode',
+                        editable: false,
+                        mode:'local',
+                        prompt:'请先选择指标级别',
+                        onChange:function(newValue,oldValue) {
+                            $('#indicators-hidden-item').val($('#indicators-item').combobox('getText'));
+                        },
+                        filter: function(q, row){
+                            var opts = $(this).combobox('options');
+                            return row[opts.textField].indexOf(q) >= 0;
+                       }
+					">
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th>权重：</th>
+                <td>
+                    <input id="indicators-weight" class="easyui-numberbox"
+                           data-options="min:0,max:1,precision:2,required:true,width:240" name="weight"/>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+</html>

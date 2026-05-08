@@ -1,0 +1,97 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:bf="http://www.thymeleaf.org">
+	
+
+<div class="table-container">
+	<form id="add-user-form" method="post" enctype="multipart/form-data">
+		<table class="edit-table">
+			<tr>
+				<th>用户名：</th>
+				<td>
+					<input class="easyui-textbox" id="user-username" name="username" data-options="required:true,width:240" />
+				</td>
+				<th>真实姓名：</th>
+				<td>
+					<input class="easyui-textbox" id="user-realName" name="realName" data-options="required:true,width:240" />
+				</td>
+			</tr>
+			<tr>
+				<th>密码：</th>
+				<td>
+					<input class="easyui-passwordbox" id="user-password" name="password" data-options="editable:false,width:240,showEye:true" />
+				</td>
+				<th>所属组织：</th>
+				<td>
+					<select class="easyui-combotree" id="user-parent" name="parentId" data-options="
+						required: true,
+						width: 240,
+						url: '/org/getEnableOrgTree',
+						textField: 'name',
+						valueField: 'id'
+					">
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<th>员工号：</th>
+				<td>
+					<input class="easyui-textbox" id="user-staffCode" name="staffCode" data-options="width:240" />
+				</td>
+				<th>身份证号：</th>
+				<td>
+					<input class="easyui-textbox" id="user-idCard" name="idCard" data-options="width:240" />
+				</td>
+			</tr>
+			<tr>
+				<th>电子邮箱：</th>
+				<td>
+					<input class="easyui-textbox" id="user-email" name="email" data-options="width:240" />
+				</td>
+				<th>联系电话：</th>
+				<td>
+					<input class="easyui-textbox" id="user-phone" name="phone" data-options="width:240" />
+				</td>
+			</tr>
+			<tr>
+				<th>地址：</th>
+				<td>
+					<input class="easyui-textbox" id="user-address" name="address" data-options="width:240" />
+				</td>
+				<th>排序号：</th>
+				<td>
+					<input class="easyui-numberbox" id="user-orderNo" name="orderNo" data-options="required:true,min:0,precision:0,width:240" />
+				</td>
+			</tr>
+			<tr>
+				<th>用户头像：</th>
+				<td>
+					<input class="easyui-filebox" id="user-headImage" name="headImageFile" data-options="width:240,buttonText:'选择文件'" />
+				</td>
+				<th>电子签名：</th>
+				<td>
+					<input class="easyui-filebox" id="user-signImage" name="signImageFile" data-options="width:240,buttonText:'选择文件'" />
+				</td>
+			</tr>
+			<!--
+			<tr>
+				<th>角色：</th>
+				<td colspan="3">
+					<select name="roleIds" class="easyui-combobox" data-options="
+						url: '/role/findEnableRoles',
+						method: 'get',
+						textField: 'name',
+						valueField: 'id',
+						multiple:true,
+						panelHeight:'200',
+						width: 240,
+						editable: false
+					"></select>
+				</td>
+			</tr>
+			-->
+		</table>
+	</form>
+</div>
+</html>

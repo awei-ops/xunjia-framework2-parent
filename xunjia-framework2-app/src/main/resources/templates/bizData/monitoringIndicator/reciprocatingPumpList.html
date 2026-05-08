@@ -1,0 +1,218 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:xunjia="http://www.thymeleaf.org">
+
+<head>
+  <div th:replace="framework/include/head::head"></div>
+</head>
+
+<body>
+<div class="easyui-layout" fit="true">
+  <div data-options="region:'center'">
+    <table id="display-data-table"></table>
+    <div id="user-operation-bar" class="datagrid-toolbar">
+      <xunjia:button th:menu-id="${menuId}" perm-code="monitoringIndicator:save"/>
+      <xunjia:button th:menu-id="${menuId}" perm-code="monitoringIndicator:update"/>
+      <xunjia:button th:menu-id="${menuId}" perm-code="monitoringIndicator:delete"/>
+    </div>
+  </div>
+</div>
+
+<script th:inline="none">
+	$(function(){
+		$("#display-data-table").datagrid({
+			url: '/monitoringIndicator/finByTypeAndItemOneKey',
+			queryParams: {
+                type:'注水泵机组监测项目与指标要求',
+                itemOneKey:'往复泵'
+            },
+			idField: 'id',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: false,
+			pageSize: 20,
+			rownumbers: true,
+			toolbar: "#user-operation-bar",
+			columns: [[
+				{
+					field: 'id',
+					checkbox: true
+				},
+				{
+					field: 'monitoringItemOneLimit',
+					title: '机组效率%限定值（往复泵）',
+				},
+				{
+					field: 'monitoringItemOneEnergy',
+					title: '机组效率%节能评价值（往复泵）',
+				},
+				{
+					field: 'itemOneMinEvaluation',
+					title: '机组效率小于限定时评价',
+				},
+				{
+					field: 'itemOneMidEvaluation',
+					title: '机组效率大于等于限定、小于节能时评价',
+				},
+				{
+					field: 'itemOneMaxEvaluation',
+					title: '机组效率大于节能时评价',
+				},
+				{
+					field: 'monitoringItemTwoLimit',
+					title: '系统效率%限定值（往复泵）',
+				},
+				{
+					field: 'monitoringItemTwoEnergy',
+					title: '系统效率%节能评价值（往复泵）',
+				}
+			]]
+		});
+	});
+
+	function add(){
+		var addDialog = $("<div></div>").dialog({
+			title: '添加数据',
+			width: 630,
+			height: 400,
+			modal: true,
+			iconCls: "fa fa-pencil-square-o",
+			href: '/monitoringIndicator/toAddReciprocatingPump',
+			onClose : function() {
+                $(this).dialog('destroy');
+            },
+			buttons: [
+				{
+					text: '保存',
+					iconCls: 'fa fa-save',
+					handler: function(){
+						submitDataForm("add-form", addDialog, "/monitoringIndicator/save");
+					}
+				},
+				{
+					text: '关闭',
+					iconCls: 'fa fa-close',
+					handler: function() {
+						addDialog.dialog('destroy');
+					}
+				}
+			]
+		});
+	}
+
+	function edit(){
+		var selectedRows = $("#display-data-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要编辑的记录。", "warning");
+		} else if (selectedRows.length > 1){
+			$.messager.alert("提示信息", "您只能选择一条记录进行操作。", "warning");
+		} else {
+			var editDialog = $("<div></div>").dialog({
+				title: '编辑数据',
+				width: 630,
+				height: 400,
+				modal: true,
+				iconCls: "fa fa-pencil-square-o",
+				href: '/monitoringIndicator/toEditReciprocatingPump',
+				onClose : function() {
+	                $(this).dialog('destroy');
+	            },
+				onLoad: function(){
+					$.ajax({
+						url: '/monitoringIndicator/findById',
+						data: { id: selectedRows[0].id },
+						type: 'get',
+						dataType: 'json',
+						success: function(data){
+							$("#monitoring-id").val(data.id);
+							$("#monitoring-monitoringItemOneLimit").numberbox('setValue', data.monitoringItemOneLimit);
+							$("#monitoring-monitoringItemOneEnergy").numberbox('setValue', data.monitoringItemOneEnergy);
+							$("#monitoring-itemOneMinEvaluation").textbox('setValue', data.itemOneMinEvaluation);
+							$("#monitoring-itemOneMidEvaluation").textbox('setValue', data.itemOneMidEvaluation);
+							$("#monitoring-itemOneMaxEvaluation").textbox('setValue', data.itemOneMaxEvaluation);
+							$("#monitoring-monitoringItemTwoLimit").numberbox('setValue', data.monitoringItemTwoLimit);
+							$("#monitoring-monitoringItemTwoEnergy").numberbox('setValue', data.monitoringItemTwoEnergy);
+						}
+					});
+				},
+				buttons: [
+					{
+						text: '保存',
+						iconCls: 'fa fa-save',
+						handler: function(){
+							submitDataForm("edit-form", editDialog, "/monitoringIndicator/update");
+						}
+					},
+					{
+						text: '关闭',
+						iconCls: 'fa fa-close',
+						handler: function(){
+							editDialog.dialog('destroy');
+						}
+					}
+				]
+			});
+		}
+	}
+
+	function dataRemove(){
+		var selectedRows = $("#display-data-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要删除的记录。", "warning");
+		} else {
+			$.messager.confirm('删除确认', '您是否确认要删除选中的记录？', function(r){
+				if (r){
+					var ids = new Array();
+					$.each(selectedRows, function(i, n){
+						ids[i] = n.id;
+					});
+
+					$.ajax({
+						url: '/monitoringIndicator/delete',
+						data: { "ids[]": ids },
+						type: 'post',
+						dataType: 'json',
+						success: function(data){
+							if (data.result){
+								$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+								$("#display-data-table").datagrid("reload");
+								$("#display-data-table").datagrid("clearSelections");
+							} else {
+								$.messager.alert("提示信息", data.msg, "error");
+							}
+						}
+					});
+				}
+			});
+		}
+	}
+
+	function submitDataForm(formId, dialog, url){
+	    var validate;
+		$("#" + formId).form('submit', {
+			url: url,
+			onSubmit: function(){
+			    validate = $(this).form("validate");
+                return validate;
+			},
+			success: function(data){
+			    if(validate){
+                    data = $.parseJSON(data);
+                    if (data.result){
+                        dialog.dialog("destroy");
+                        $.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+                        $("#display-data-table").datagrid("reload");
+                        $("#display-data-table").datagrid("clearSelections");
+                    } else {
+                        $.messager.alert("提示信息", data.msg, "error");
+                    }
+				}
+			}
+		});
+	}
+</script>
+</body>
+</html>

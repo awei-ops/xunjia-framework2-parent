@@ -1,0 +1,442 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" xmlns:bf="http://www.thymeleaf.org">
+
+<head>
+    <div th:replace="framework/include/head::head"></div>
+    <script type="text/javascript" src="/global/js/echarts/echarts.min.js"></script>
+    <script type="text/javascript" src="/global/js/datagrid-export.js"></script>
+</head>
+
+<body>
+    <div class="easyui-layout" fit="true">
+        <div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+            <span>统计月份：</span>
+            <select class="easyui-combobox" id="query-year" data-options="
+                url:'/commonControl/getYears',
+                width: 110,
+                textField: 'label',
+                valueField: 'value',
+                editable: false,
+            ">
+            </select>
+            <a>年</a>
+            <select class="easyui-combobox" id="query-month" data-options="
+                url:'/commonControl/getMonths',
+                width: 110,
+                textField: 'label',
+                valueField: 'value',
+                editable: false,
+            ">
+            </select>
+            <a>月</a>
+            <a href="javascript:" onclick="searchPageData();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+            <a href="javascript:" onclick="recompute();" class="easyui-linkbutton" iconCls="fa fa-search">重新计算</a>
+            <a href="javascript:" onclick="chart();" class="easyui-linkbutton" iconCls="fa fa-bar-chart">总耗图表</a>
+            <a href="javascript:" onclick="chartUnit();" class="easyui-linkbutton" iconCls="fa fa-bar-chart">单耗图表</a>
+            <a href="javascript:" onclick="exportDatagrid();" class="easyui-linkbutton"
+                iconCls="fa fa-cloud-download">导出</a>
+        </div>
+        <div data-options="region:'center'">
+            <table id="display-data-table"></table>
+        </div>
+    </div>
+
+
+    <script th:inline="none">
+        $(function () {
+            let date = new Date;
+            date.setMonth(date.getMonth()-1);
+            let year = date.getFullYear();
+            let month = date.getMonth() + 1;
+            $('#query-year').combobox('setValue', year);
+            $('#query-month').combobox('setValue', month);
+            $("#display-data-table").datagrid({
+                url: '/waterSupplyConsumePower/queryReport',
+                fit: true,
+                fitColumns: true,
+                striped: true,
+                loadMsg: '数据加载中，请稍候...',
+                pagination: false,
+                pageSize: 20,
+                rownumbers: true,
+                onClickCell: onClickCell,
+                onAfterEdit: onAfterEdit,
+                queryParams: {
+                    year: year,
+                    month: month,
+                    compute: false
+                },
+                onLoadSuccess: function (data) {
+                    loadDataGrid(data)
+                },
+                columns: [
+                    [
+                        { field: "areaName", title: "作业区名称", rowspan: 3, width: 100, align: 'center' },
+                        { field: "stationName", title: "注水站", rowspan: 3, width: 100, align: 'center' },
+                        { title: "能耗", colspan: 6, align: 'center' },
+                        { title: "机泵", colspan: 5, align: 'center' },
+                    ],
+                    [
+                        { title: "耗电量（10⁴kWh)", colspan: 2, align: 'center' },
+                        { title: "泵水量（10⁴m³）", colspan: 2, align: 'center' },
+                        { title: "泵水单耗（kWh/m³）", colspan: 2, align: 'center' },
+                        {
+                            field: "pumpCount", title: "泵台数", rowspan: 2, align: 'center', styler: flagColor, editor: {
+                                type: 'numberbox',
+                            }
+                        },
+                        { title: "运行台数", colspan: 2, align: 'center' },
+                        { title: "泵效（%）", colspan: 2, align: 'center' },
+                    ],
+                    [
+                        {
+                            field: "waterSupplyPower", title: "当月", width: 80, align: 'center', styler: flagColor, editor: {
+                                type: 'numberbox',
+                                options: { precision: 2 }
+                            }
+                        },
+                        { field: "waterSupplyPowerSum", title: "累计", width: 80, align: 'center' },
+                        {
+                            field: "pumpingWater", title: "当月", width: 80, align: 'center', styler: flagColor, editor: {
+                                type: 'numberbox',
+                                options: { precision: 2 }
+                            }
+                        },
+                        { field: "pumpingWaterSum", title: "累计", width: 80, align: 'center' },
+                        {
+                            field: "waterSupplyPumpingUnit", title: "当月平均", width: 80, align: 'center', styler: flagColor, editor: {
+                                type: 'numberbox',
+                                options: { precision: 2 }
+                            }
+                        },
+                        { field: "waterSupplyPumpingUnitSumAve", title: "累计平均", width: 80, align: 'center' },
+                        {
+                            field: "pumpRunCount", title: "当月", width: 80, align: 'center', styler: flagColor, editor: {
+                                type: 'numberbox',
+                            }
+                        },
+                        { field: "pumpRunCountSumAve", title: "月累平均", width: 80, align: 'center' },
+                        {
+                            field: "pumpEfficiencyAve", title: "当月平均", width: 80, align: 'center', styler: flagColor, editor: {
+                                type: 'numberbox',
+                                options: { precision: 2 }
+                            }
+                        },
+                        { field: "pumpEfficiencySumAve", title: "月累平均", width: 80, align: 'center' },
+                    ]
+                ]
+            });
+        });
+
+        function searchPageData() {
+            let year = $('#query-year').combobox('getValue');
+            let month = $('#query-month').combobox('getValue');
+            $("#display-data-table").datagrid('load', {
+                year: year,
+                month: month,
+                compute: false
+            });
+        }
+
+        function recompute() {
+            let year = $('#query-year').combobox('getValue');
+            let month = $('#query-month').combobox('getValue');
+            $("#display-data-table").datagrid('load', {
+                year: year,
+                month: month,
+                compute: true
+            });
+        }
+
+        function flagColor(val, row, index) {
+            if (row["areaName"] != "合计") {
+                return 'background:#FFFACD';
+            }
+        }
+
+        var editIndex = undefined;
+        function endEditing() {//该方法用于关闭上一个焦点的editing状态
+            if (editIndex == undefined) {
+                return true
+            }
+            if ($('#display-data-table').datagrid('validateRow', editIndex)) {
+                $('#display-data-table').datagrid('endEdit', editIndex);
+                editIndex = undefined;
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+
+        function onClickCell(index, field, value) {
+            if (endEditing()) {
+                if (field == "waterSupplyPower" || field == "pumpingWater" || field == "waterSupplyPumpingUnit" || field == "pumpCount" || field == "pumpRunCount" || field == "pumpEfficiencyAve") {
+                    var row = $('#display-data-table').datagrid('getRows')[index];
+                    if (row["areaName"] != "合计") {
+                        $(this).datagrid('beginEdit', index);
+                        var ed = $(this).datagrid('getEditor', { index: index, field: field });
+                        $(ed.target).focus();
+                    }
+                }
+                editIndex = index;
+            }
+        }
+
+        //单元格失去焦点执行的方法
+        function onAfterEdit(index, row, changes) {
+            var updated = $('#display-data-table').datagrid('getChanges', 'updated');
+            if (updated.length < 1) {
+                editRow = undefined;
+                $('#display-data-table').datagrid('unselectAll');
+                return;
+            } else {
+                submitData(index, row, changes);
+            }
+        }
+
+        //提交数据
+        function submitData(index, row, changes) {
+            $.ajax({
+                type: 'get',
+                async: false,
+                url: "/waterSupplyConsumePower/update",
+                data: {
+                    id: row.id,
+                    waterSupplyPower: row.waterSupplyPower,
+                    pumpingWater: row.pumpingWater,
+                    waterSupplyPumpingUnit: row.waterSupplyPumpingUnit,
+                    pumpCount: row.pumpCount,
+                    pumpRunCount: row.pumpRunCount,
+                    pumpEfficiencyAve: row.pumpEfficiencyAve,
+                },
+                success: function (response) {
+                    $('#display-data-table').datagrid('reload');
+                }
+            })
+        }
+
+        function loadDataGrid(data) {
+            //添加"合计"行
+            $("#display-data-table").datagrid(
+                'appendRow',
+                {
+                    areaName: "合计",
+                    stationName: "合计",
+                    waterSupplyPower: compute("waterSupplyPower", false),
+                    waterSupplyPowerSum: compute("waterSupplyPowerSum", false),
+                    pumpingWater: compute("pumpingWater", false),
+                    pumpingWaterSum: compute("pumpingWaterSum", false),
+                    waterSupplyPumpingUnit: compute("waterSupplyPumpingUnit", true),
+                    waterSupplyPumpingUnitSumAve: compute("waterSupplyPumpingUnitSumAve", true),
+                    pumpCount: compute("pumpCount", false),
+                    pumpRunCount: compute("pumpRunCount", false),
+                    pumpRunCountSumAve: compute("pumpRunCountSumAve", true),
+                    pumpEfficiencyAve: compute("pumpEfficiencyAve", true),
+                    pumpEfficiencySumAve: compute("pumpEfficiencySumAve", true),
+                });
+            $("#display-data-table").datagrid("fixRowHeight");//刷新序号列 避免序号列错位
+            computeMergeCell();
+        }
+
+        function compute(colName, ave) {
+            let rows = $("#display-data-table").datagrid("getRows");
+            let total = 0;
+            let count = 0;
+            for (var i = 0; i < rows.length; i++) {
+                if (rows[i][colName] != null) {
+                    if (parseFloat(rows[i][colName]) != 0) {
+                        count++;
+                    }
+                    total += parseFloat(rows[i][colName]);
+                }
+            }
+            if (ave && count > 0) {
+                total = total / count;
+            }
+            total = total.toFixed(2);
+            return total;
+        }
+
+        function mergeCells(i, field, rowspan, colspan) {
+            //mergeCells合并单元格，index第几行开始，field合并的字段，rowspan合并行数，colspan合并列
+            $('#display-data-table').datagrid('mergeCells', {
+                index: i,
+                field: field,
+                rowspan: rowspan,
+                colspan: colspan
+            });
+        }
+
+        function computeMergeCell() {
+            let rows = $('#display-data-table').datagrid("getRows");//获取行的数据
+            let columns = $('#display-data-table').datagrid("options").columns;
+            for (let k = 0; k < columns[0].length; k++) {
+                if (columns[0][k].field === 'areaName') {
+                    for (let i = 0; i < rows.length; i++) {
+                        let rowspan = 0;
+                        for (let j = i; j < rows.length; j++) {
+                            if (rows[i].areaName == rows[j].areaName) {//计算合并多少行
+                                rowspan++;
+                            }
+                        }
+                        if (rowspan > 1) {
+                            mergeCells(i, 'areaName', rowspan, 1);
+                            i = i + rowspan - 1;
+                        }
+                    }
+                }
+            }
+            mergeCells(rows.length - 1, "areaName", 1, 2)
+        }
+
+        function chart() {
+            var editDialog = $("<div></div>").dialog({
+                title: '统计信息',
+                width: 1400,
+                height: 550,
+                modal: true,
+                iconCls: "fa fa-pencil-square-o",
+                href: '/waterSupplyConsumePower/toChart',
+                onClose: function () {
+                    $(this).dialog('destroy');
+                },
+                onLoad: function () {
+                    var myChart = echarts.init(document.getElementById('chart'));
+                    let year = $('#query-year').combobox('getValue');
+                    let month = $('#query-month').combobox('getValue');
+                    $.ajax({
+                        url: '/waterSupplyConsumePower/getStatistics',
+                        data: { year: year, month: month },
+                        type: 'get',
+                        dataType: 'json',
+                        success: function (response) {
+                            var option = {
+                                title: {
+                                    x: 'center',
+                                    text: response.title
+                                },
+                                tooltip: {
+                                    trigger: 'axis'
+                                },
+                                legend: {
+                                    orient: 'vertical',
+                                    x: 'right',
+                                    y: 'center',
+                                    data: response.legend
+                                },
+                                grid: {
+                                    left: '3%',
+                                    right: '10%',
+                                    bottom: '3%',
+                                    containLabel: true
+                                },
+                                xAxis: {
+                                    type: 'category',
+                                    data: response.xaxis
+                                },
+                                yAxis: {
+                                    type: 'value'
+                                },
+                                series: response.series
+                            }
+                            myChart.setOption(option);
+                        }
+                    });
+
+                },
+                buttons: [
+                    {
+                        text: '关闭',
+                        iconCls: 'fa fa-close',
+                        handler: function () {
+                            editDialog.dialog('destroy');
+                        }
+                    }
+                ]
+            });
+        }
+
+        function chartUnit() {
+            var editDialog = $("<div></div>").dialog({
+                title: '统计信息',
+                width: 1400,
+                height: 550,
+                modal: true,
+                iconCls: "fa fa-pencil-square-o",
+                href: '/waterSupplyConsumePower/toChart',
+                onClose: function () {
+                    $(this).dialog('destroy');
+                },
+                onLoad: function () {
+                    var myChart = echarts.init(document.getElementById('chart'));
+                    let year = $('#query-year').combobox('getValue');
+                    let month = $('#query-month').combobox('getValue');
+                    $.ajax({
+                        url: '/waterSupplyConsumePower/getStatisticsUnit',
+                        data: { year: year, month: month },
+                        type: 'get',
+                        dataType: 'json',
+                        success: function (response) {
+                            var option = {
+                                title: {
+                                    x: 'center',
+                                    text: response.title
+                                },
+                                tooltip: {
+                                    trigger: 'axis'
+                                },
+                                legend: {
+                                    orient: 'vertical',
+                                    x: 'right',
+                                    y: 'center',
+                                    data: response.legend
+                                },
+                                grid: {
+                                    left: '3%',
+                                    right: '10%',
+                                    bottom: '3%',
+                                    containLabel: true
+                                },
+                                xAxis: {
+                                    type: 'category',
+                                    data: response.xaxis
+                                },
+                                yAxis: {
+                                    type: 'value'
+                                },
+                                series: response.series
+                            }
+                            myChart.setOption(option);
+                        }
+                    });
+
+                },
+                buttons: [
+                    {
+                        text: '关闭',
+                        iconCls: 'fa fa-close',
+                        handler: function () {
+                            editDialog.dialog('destroy');
+                        }
+                    }
+                ]
+            });
+        }
+
+        function exportDatagrid() {
+            let year = $('#query-year').combobox('getValue');
+            let month = $('#query-month').combobox('getValue');
+            $('#display-data-table').datagrid('toExcel', {
+                filename: '供水系统耗电月报.xls',
+                worksheet: '供水系统耗电月报',
+                isReport: true,
+                mergeLastRow: true,
+                caption: "大庆油田第十采油厂" + year + "年" + month + "月供水系统耗电量月报"
+            });
+        }
+
+    </script>
+</body>
+
+</html>

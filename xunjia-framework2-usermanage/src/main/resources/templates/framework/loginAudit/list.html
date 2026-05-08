@@ -1,0 +1,76 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:bf="http://www.thymeleaf.org">
+	
+<head>
+	<div th:replace="framework/include/head::head"></div>
+</head>
+
+<body>
+	<div class="easyui-layout" fit="true">
+		<div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+			<input id="login-audit-start-date" class="easyui-datebox" data-options="width:240,editable:false,label:'起始日期：' ,labelAlign:'right',labelWidth:70" />
+			<input id="login-audit-end-date" class="easyui-datebox" data-options="width:240,editable:false,label:'截止日期：' ,labelAlign:'right',labelWidth:70" />
+			<a href="javascript:" onclick="searchLoginAudit();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+		</div>
+		<div data-options="region:'center'">
+			<table id="login-audit-table"></table>
+		</div>
+	</div>
+	
+	<script th:inline="none">
+	$(function(){
+		$("#login-audit-table").datagrid({
+			url: '/loginAudit/findRecords',
+			idField: 'id',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: true,
+			pageSize: 20,
+			rownumbers: true,
+			columns: [[
+				{
+					field: 'id',
+					checkbox: true
+				}, {
+					field: 'username',
+					title: '登录账户',
+					width: 80
+				}, {
+					field: 'loginTime',
+					title: '登录时间',
+					width: 80
+				}, {
+					field: 'ip',
+					title: '登录人ip',
+					width: 80
+				}, {
+					field: 'result',
+					title: '操作结果',
+					width: 80,
+					formatter: function(value, row, index){
+						if (value == 1){
+							return "<span style='padding:8px 10px 8px 10px;background-color:#80EA6E'>成功</span>";
+						} else {
+							return "<span style='padding:8px 10px 8px 10px;background-color:#DC143C;color:#FFF'>失败</span>";
+						}
+					}
+				}
+			]]
+		});
+	});
+	
+	function searchLoginAudit(){
+		var startDate = $("#login-audit-start-date").datebox('getValue');
+		var endDate = $("#login-audit-end-date").datebox('getValue');
+		$("#login-audit-table").datagrid('load', {
+			startDate: startDate,
+			endDate: endDate
+		});
+	}
+	</script>
+</body>
+</html>

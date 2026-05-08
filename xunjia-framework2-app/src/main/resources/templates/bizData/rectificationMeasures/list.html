@@ -1,0 +1,66 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:xunjia="http://www.thymeleaf.org">
+
+<head>
+    <div th:replace="framework/include/head::head"></div>
+</head>
+
+<body>
+<div class="easyui-layout" fit="true">
+    <div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+        <input id="query-startDate-key" class="easyui-datebox" editable="false" value="true"
+               data-options="width:240,label:'开始时间：' ,labelAlign:'right',labelWidth:90"/>
+        <input id="query-endDate-key" class="easyui-datebox" editable="false" value="true"
+               data-options="width:240,label:'结束时间：' ,labelAlign:'right',labelWidth:90"/>
+        <a href="javascript:" onclick="searchPageData();" class="easyui-linkbutton"
+           iconCls="fa fa-search">查询</a>
+    </div>
+    <div data-options="region:'center'">
+        <table id="display-data-table"></table>
+    </div>
+</div>
+
+<script th:inline="none">
+    var measuresTypeCode = getUrlParam('measuresTypeCode')
+	$(function(){
+		$("#display-data-table").datagrid({
+			url: '/energySavingMeasures/getRectificationMeasures',
+			fit: true,
+			fitColumns: false,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: true,
+			pageSize: 20,
+			rownumbers: true,
+			nowrap:false,
+			queryParams: {
+                startDate: $("#query-startDate-key").datebox('getValue'),
+                endDate: $("#query-endDate-key").datebox('getValue'),
+                measuresTypeCode:measuresTypeCode
+            },
+			columns: [[
+                {"field":"zmc","title":"站名称","width":110},
+                {"field":"equipmentName","title":"设备名称","width":110},
+                {"field":"originalDataDate","title":"日期","width":110},
+                {"field":"measures","title":"建议措施","width":400}]]
+		});
+	});
+
+	function getUrlParam(name) {
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)"); //构造一个含有目标参数的正则表达式对象
+        var r = window.location.search.substr(1).match(reg);  //匹配目标参数
+        if (r != null) return unescape(r[2]); return null; //返回参数值
+    }
+
+	function searchPageData(){
+		$("#display-data-table").datagrid('load', {
+			'startDate': $("#query-startDate-key").datebox('getValue'),
+			'endDate':$("#query-endDate-key").datebox('getValue'),
+			'measuresTypeCode':measuresTypeCode
+		});
+	}
+</script>
+</body>
+</html>

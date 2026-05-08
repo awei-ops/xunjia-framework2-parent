@@ -1,0 +1,347 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:xunjia="http://www.thymeleaf.org">
+	
+<head>
+	<div th:replace="framework/include/head::head"></div>
+</head>
+
+<body>
+	<div class="easyui-layout" fit="true">
+		<div data-options="region:'center'">
+			<table id="custom-entity-table"></table>
+			<div id="custom-entity-table-tools" class="datagrid-toolbar">
+				<xunjia:button th:menu-id="${menuId}" perm-code="customEntity:save" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="customEntity:update" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="customEntity:delete" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="customEntity:generate" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="customEntity:generateDoc" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="customEntity:saveResources" />
+			</div>
+		</div>
+	</div>
+	
+	<script th:inline="none">
+	$(function(){
+		$("#custom-entity-table").datagrid({
+			url: '/customEntity/findCustomEntities',
+			idField: 'id',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: true,
+			pageSize: 20,
+			rownumbers: true,
+			toolbar: "#custom-entity-table-tools",
+			columns: [[
+				{
+					field: 'id',
+					checkbox: true
+				}, {
+					field: 'packageName',
+					title: '包名',
+					width: 160,
+				}, {
+					field: 'entityName',
+					title: '实体类名',
+					width: 80
+				}, {
+					field: 'tableName',
+					title: '映射表名',
+					width: 80
+				}, {
+					field: 'entityDescr',
+					title: '描述',
+					width: 120
+				}, {
+					field: 'author',
+					title: '作者',
+					width: 60
+				}, {
+					field: 'createDate',
+					title: '创建日期',
+					width: 80
+				}, {
+					field: 'treeStructure',
+					title: '展示树形结构',
+					width: 80,
+					formatter: function(value, row, index){
+						return value == 0 ? "否" : "是";
+					}
+				}, {
+					field: 'operations',
+					title: '操作',
+					width: 120
+				}
+			]]
+		});
+		
+	});
+		
+	function add(){
+		var addDialog = $("<div></div>").dialog({
+			title: '添加实体信息',
+			width: '100%',
+			height: '100%',
+			modal: true,
+			cache: false,
+			iconCls: "fa fa-pencil-square-o",
+			href: '/customEntity/toAdd',
+			onClose : function() {
+                $(this).dialog('destroy');
+            },
+			buttons: [
+				{ 
+					text: '保存',
+					iconCls: 'fa fa-save', 
+					handler: function(){
+						submitCustomEntityForm("add-custom-entity-form", addDialog, "/customEntity/save");
+					} 
+				},
+				{ 
+					text: '关闭', 
+					iconCls: 'fa fa-close', 
+					handler: function() { 
+						addDialog.dialog('destroy'); 
+					}
+				}
+			]
+		});
+	}
+	
+	function edit(){
+		var selectedRows = $("#custom-entity-table").datagrid("getChecked");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要编辑的记录。", "warning");
+		} else if (selectedRows.length > 1){
+			$.messager.alert("提示信息", "您只能选择一条记录进行操作。", "warning");
+		} else {
+			var editDialog = $("<div></div>").dialog({
+				title: '编辑实体信息',
+				width: '100%',
+				height: '100%',
+				modal: true,
+				iconCls: "fa fa-pencil-square-o",
+				href: '/customEntity/toEdit?id=' + selectedRows[0].id,
+				onClose : function() {
+	                $(this).dialog('destroy');
+	            },
+				buttons: [
+					{ 
+						text: '保存', 
+						iconCls: 'fa fa-save', 
+						handler: function(){
+							submitCustomEntityForm("edit-custom-entity-form", editDialog, "/customEntity/update");
+						} 
+					},
+					{ 
+						text: '关闭', 
+						iconCls: 'fa fa-close', 
+						handler: function(){ 
+							editDialog.dialog('destroy'); 
+						} 
+					}
+				]
+			});
+		}
+	}
+	
+	function dataRemove(){
+		var selectedRows = $("#custom-entity-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要删除的记录。", "warning");
+		} else {
+			$.messager.confirm('删除确认', '您是否确认要删除选中的记录？', function(r){
+				if (r){
+					var ids = new Array();
+					$.each(selectedRows, function(i, n){
+						ids[i] = n.id;
+					});
+					
+					$.ajax({
+						url: '/customEntity/delete',
+						data: { "ids[]": ids },
+						type: 'post',
+						dataType: 'json',
+						success: function(data){
+							if (data.result){
+								$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+								$("#custom-entity-table").datagrid("reload");
+								$("#custom-entity-table").datagrid("clearSelections");
+							} else {
+								$.messager.alert("提示信息", data.msg, "error");
+							}
+						}
+					});	
+				}
+			});
+		}
+	}
+	
+	function submitCustomEntityForm(formId, dialog, url){
+		$("#" + formId).form('submit', {
+			url: url,
+			onSubmit: function(){
+				var validateResult = $(this).form("validate");
+				if (validateResult){
+					if($("#custom-entity-tree-structure").combobox('getValue') == "1"){
+						var propNames = $("[name$='propName']");
+						var nameExists = false;
+						$.each(propNames, function(i, n){
+							if (n.value == "name"){
+								nameExists = true;
+								return;
+							}
+						});
+						
+						if (!nameExists){
+							$.messager.alert("提示信息", "树形结构实体需要name属性。", "warning");
+						}
+						return nameExists;
+					} else {
+						return validateResult;
+					}
+				}
+				return false;
+			},
+			success: function(data){
+				data = $.parseJSON(data);
+				if (data.result){
+					dialog.dialog("destroy");
+					$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+					$("#custom-entity-table").datagrid("reload");
+					$("#custom-entity-table").datagrid("clearSelections");
+				} else {
+					$.messager.alert("提示信息", data.msg, "error");
+				}
+			}
+		});
+	}
+	
+	function generate(){
+		var selectedRows = $("#custom-entity-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要操作的实体信息。", "warning");
+		} else {
+			var ids = new Array();
+			$.each(selectedRows, function(i, n){
+				ids[i] = n.id;
+			});
+			
+			$.ajax({
+				url: '/customEntity/generate',
+				data: { "ids[]": ids },
+				type: 'post',
+				dataType: 'json',
+				success: function(data){
+					if (data.result){
+						$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+						window.open('/customEntity/downloadZipFile');
+					} else {
+						$.messager.alert("提示信息", data.msg, "error");
+					}
+				}
+			});	
+		}
+	}
+
+	function saveResources(){
+		var selectedRows = $("#custom-entity-table").datagrid("getChecked");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要生成的模块。", "warning");
+		} else if (selectedRows.length > 1){
+			$.messager.alert("提示信息", "您只能选择一条记录进行操作。", "warning");
+		} else {
+			var ids = new Array();
+			$.each(selectedRows, function(i, n){
+				ids[i] = n.id;
+			});
+			var dialog = $("<div></div>").dialog({
+				title: '选择上级资源',
+				width: '500',
+				height: '150',
+				modal: true,
+				cache: false,
+				iconCls: "fa fa-pencil-square-o",
+				href: '/customEntity/toSelectParentResource',
+				onClose : function() {
+					$(this).dialog('destroy');
+				},
+				buttons: [
+					{
+						text: '提交',
+						iconCls: 'fa fa-save',
+						handler: function(){
+							$.post("/customEntity/saveModuleResources", { "ids[]": ids, parentResourceId: $("#resource-parent").combobox('getValue') }, function(data){
+								if (data.result){
+									$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+									dialog.dialog('destroy');
+								} else {
+									$.messager.alert("提示信息", data.msg, "error");
+								}
+							});
+						}
+					},
+					{
+						text: '关闭',
+						iconCls: 'fa fa-close',
+						handler: function() {
+							dialog.dialog('destroy');
+						}
+					}
+				]
+			});
+		}
+	}
+
+	function generateDoc(){
+		var selectedRows = $("#custom-entity-table").datagrid("getChecked");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要生成的模块。", "warning");
+		} else {
+			var ids = "";
+			$.each(selectedRows, function(i, n){
+				ids += n.id + ",";
+			});
+			ids = ids.substring(0, ids.length - 1);
+			var dialog = $("<div></div>").dialog({
+				title: '填写项目信息',
+				width: '500',
+				height: '220',
+				modal: true,
+				cache: false,
+				iconCls: "fa fa-pencil-square-o",
+				href: '/customEntity/toWriteProject',
+				onClose : function() {
+					$(this).dialog('destroy');
+				},
+				onLoad: function(){
+					$("#entityIds").val(ids);
+				},
+				buttons: [
+					{
+						text: '提交',
+						iconCls: 'fa fa-save',
+						handler: function(){
+							var projectName = $("#projectName").textbox('getValue');
+							var version = $("#version").textbox('getValue');
+							window.open("/customEntity/generateDocuments?projectName=" + projectName + "&version=" + version + "&entityIds=" + ids);
+						}
+					},
+					{
+						text: '关闭',
+						iconCls: 'fa fa-close',
+						handler: function() {
+							dialog.dialog('destroy');
+						}
+					}
+				]
+			});
+		}
+	}
+	
+	</script>
+</body>
+</html>

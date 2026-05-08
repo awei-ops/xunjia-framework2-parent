@@ -1,0 +1,66 @@
+server:
+  port: 9090
+spring:
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    url: jdbc:mariadb://11.11.111.218:33060/pes?useUnicode=true&characterEncoding=utf8mb4&SslMode=None&serverTimezone=Asia/Shanghai
+    driver-class-name: org.mariadb.jdbc.Driver
+    username: root
+    password: yjzx@1234567890
+    druid:
+      filters: stat,wall
+      connection-properties: druid.stat.mergeSql=true;druid.stat.slowSqlMills=5000
+  jpa:
+    show-sql: true
+    database-platform: org.hibernate.dialect.MariaDB103Dialect
+    hibernate:
+      ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+  devtools:
+    restart:
+      enabled: true
+      exclude: static/**,public/**,content/**,templates/**,**.ftl
+
+# =========  Redis 连接配置 =========
+#  redis:
+#    database: 0
+#    host: 10.114.229.179         # Redis服务器地址
+#    port: 6379              # Redis服务器连接端口
+#    password: dqgbframework@v2.0              # Redis服务器连接密码（默认为空）
+#    pool:
+#      max-active: 20       # 连接池最大连接数（使用负值表示没有限制）
+#      max-idle: 10          # 连接池中的最大空闲连接
+#      max-wait: -1          # 连接池最大阻塞等待时间（使用负值表示没有限制）
+#      min-idle: 0           # 连接池中的最小空闲连接
+#    timeout: 1000           # 连接超时时间（毫秒）
+
+#开启Activiti的SQL日志
+#logging.level.org.activiti.engine.impl.persistence.entity=debug
+
+com:
+  alibaba:
+    druid:
+      servlet:
+        allow: 127.0.0.1
+        deny:
+  xunjia:
+    framework:
+      baseUploadFolder: c:/web/upload/        #系统上传文件目录
+      baseDownloadFolder: c:/web/download/    #系统下载文件目录
+      uploadAccessPath: /upload/          #系统上传文件目录的访问路径
+      downloadAccessPath: /download/      #系统下载文件目录的访问路径
+      security:
+        loginFailShowVerifyCode: 3  #账户登录失败几次开始显示验证码
+        loginFailEnableDisable: 5   #账户登录失败几次开始启用冷静期
+        minLength: 6          #密码最小长度。0为不限制
+        pattern: 1,2,4      #密码模式，密码中必须包含哪些内容 1数字 2小写字符 3大写字符 4其他字符，0为不限制
+        defaultPassword: user123456@    #添加和导入用户信息时的默认密码
+        passwordEffectiveDays: 90       #密码有效天数
+        #aesKey: PlatformSecurity  #账户AES加密的Key
+        anonUrls: /webservice,/unionLoginCallback,/dmgc_y_d_csb/create_DMGC_Y_D_CSB,/tsz_jxpj/update_Station_pj,/zyz_jxpj/update_Station_pj,/zsz_jxpj/update_Station_pj,/sclz_jxpj/update_Station_pj,/zyq_jxpj/create_ZYQ_RSJ #不需要登录验证的URL，以,分隔，允许使用通配符
+      xss:
+        enabled: true
+        excludes:
+        urlPatterns: /*
+a5SyncUrl: 11.11.111.226:8099

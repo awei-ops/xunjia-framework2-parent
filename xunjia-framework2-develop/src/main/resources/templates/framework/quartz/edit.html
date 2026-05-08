@@ -1,0 +1,38 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:bf="http://www.thymeleaf.org">
+	
+
+<div class="table-container">
+	<form id="edit-quartz-job-form" method="post">
+		<input type="hidden" id="quartz-job-id" name="id" />
+		<table class="edit-table">
+			<tr>
+				<th>任务名称：</th>
+				<td>
+					<input class="easyui-textbox" id="quartz-job-name" name="jobName" data-options="required:true,width:300" />
+				</td>
+			</tr>
+			<tr>
+				<th>任务组：</th>
+				<td>
+					<input class="easyui-textbox" id="quartz-job-group" name="jobGroup" data-options="required:true,width:300" />
+				</td>
+			</tr>
+			<tr>
+				<th>定时规则：</th>
+				<td>
+					<input class="easyui-textbox" id="quartz-job-cron-expression" name="cronExpression" data-options="required:true,width:300" />
+				</td>
+			</tr>
+			<tr>
+				<th>任务调用类：</th>
+				<td>
+					<input class="easyui-textbox" id="quartz-job-class-name" name="jobClassName" data-options="required:true,width:300" readonly />
+				</td>
+			</tr>
+		</table>
+	</form>
+</div>
+</html>

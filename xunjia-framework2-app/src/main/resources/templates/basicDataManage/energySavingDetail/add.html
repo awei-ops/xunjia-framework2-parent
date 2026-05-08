@@ -1,0 +1,27 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:bf="http://www.thymeleaf.org">
+	
+
+<div class="table-container">
+	<form id="add-form" method="post">
+		<input type="hidden" id="measuresTypeCode-key" name="measuresTypeCode" />
+		<input type="hidden" id="classificationCode-key" name="classificationCode" />
+		<table class="edit-table">
+			<tr>
+				<th>措施内容：</th>
+				<td>
+					<input class="easyui-textbox" id="detail-key" name="detail" data-options="multiline:true,required:true,width:480,height:180" />
+				</td>
+			</tr>
+			<tr>
+				<th>序号：</th>
+				<td>
+					<input class="easyui-numberbox" id="orderNo-key" name="orderNo" data-options="min:1,width:240" />
+				</td>
+			</tr>
+		</table>
+	</form>
+</div>
+</html>

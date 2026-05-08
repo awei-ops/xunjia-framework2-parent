@@ -1,0 +1,272 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" xmlns:xunjia="http://www.thymeleaf.org">
+
+<head>
+    <div th:replace="framework/include/head::head"></div>
+    <script type="text/javascript" src="/global/js/echarts/echarts.min.js"></script>
+    <script type="text/javascript" src="/global/js/anime.min.js"></script>
+</head>
+<style>
+    .ml2 {
+        font-weight: 400;
+        font-size: 3.5em;
+        color: #2e4e7e;
+        text-align: center;
+        letter-spacing: 15px;
+        font-family: 'Times New Roman', Times, serif;
+    }
+
+    .ml2 .letter {
+        display: inline-block;
+        line-height: 1em;
+    }
+</style>
+
+<body>
+    <div class="easyui-layout" fit="true">
+        <!-- <div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+            <select class="easyui-combobox" id="query-year" data-options="
+                url:'/commonControl/getYears',
+                width: 110,
+                textField: 'label',
+                valueField: 'value',
+                editable: false,
+            ">
+            </select>
+            <a href="javascript:" onclick="searchPageData();" class="easyui-linkbutton" iconCls="fa fa-search">展示</a>
+        </div> -->
+        <div data-options="region:'west',split:true" style="width: 37.5%;">
+            <table id="display-data-table"></table>
+        </div>
+        <div data-options="region:'center',split:true" style="width: 62.5%;overflow:hidden;">
+            <div id='zero' style='width:100%;height:650%;'></div>
+        </div>
+        <div data-options="region:'south',split:true" style="width: 100%;overflow:hidden;">
+            <h1 class="ml2">节能只有起点没有终点</h1>
+        </div>
+    </div>
+
+    <script th:inline="none">
+        var myChart0 = echarts.init(document.getElementById('zero'));
+        $(function () {
+            let date = new Date;
+            let year = date.getFullYear();
+            $('#query-year').combobox('setValue', year);
+            $("#display-data-table").datagrid({
+                url: '/homePage/queryReport',
+                fit: true,
+                idField: 'id',
+                fitColumns: true,
+                striped: true,
+                loadMsg: '数据加载中，请稍候...',
+                pagination: false,
+                pageSize: 20,
+                rownumbers: false,
+                onClickCell: onClickCell,
+                onAfterEdit: onAfterEdit,
+                singleSelect: 'true',
+                queryParams: {
+                    year: year,
+                },
+                toolbar: "#user-operation-bar",
+                onLoadSuccess: function (data) {
+                    loadDataGrid(data)
+                },
+                rowStyler: function (index, row) {
+                    //首页的数据设计成了一个横表，返回当年的一条数据，
+                    //要将该横表中的数据变为坚表进行展示，所以构建自定定表结构，会产生空行，将空行隐藏  
+                    if (index == 0) {
+                        return 'display:none';
+                    }
+                },
+                columns: [[
+                    { field: 'myId', hidden: true },
+                    { field: 'myField', hidden: true },
+                    { field: 'myItem', title: "项目", width: 110, },
+                    { field: 'myUnit', title: "单位", width: 110, },
+                    {
+                        field: 'myValue', title: "数值", width: 110, editor: {
+                            type: 'numberbox',
+                            options: { precision: 2 }
+                        }
+                    },
+                ]]
+            });
+        });
+
+        function setPipe(initedChart, response) {
+            let date = new Date;
+            let year = date.getFullYear();
+            let title = '冀东油田生产系统能耗统计'
+            var myOption = {
+                title: {
+                    left: 'center',
+                    text: title,
+                    textStyle: {
+                        fontSize: 30 // 设置标题字体大小
+                    }
+                },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: "{a} <br/>{b}<br/> {c} ({d}%)"//模板变量有 {a}、{b}、{c}、{d}，分别表示系列名，数据名，数据值，百分比
+                },
+                legend: {
+                    orient: 'vertical',
+                    left: 'left',
+                },
+                color: ['#ffc85f', '#ff0606', '#62c3f4', '#60d8a1',],
+                series: [
+                    {
+                        name: title,
+                        type: 'pie',
+                        radius: '50%',
+                        center: ['50%', '50%'],
+                        minAngle: 15,
+                        labelLine: {
+                            normal: {
+                                length: 30,// 改变标示线的长度
+                                length2: 100,
+                            },
+                            show: true
+                        },
+                        label: {
+                            textStyle: {
+                                fontSize: 16,//文字大小
+                            },
+                            formatter: '{b}' + '\n\n' + '{c} ×10⁴kWh' + '\n\n' + '{d}%',//模板变量有 {a}、{b}、{c}、{d}，分别表示系列名，数据名，数据值，百分比
+                            // padding: [0, -100, 20, -100],
+                        },
+                        data: [
+                            { name: '供水系统:', value: response.waterSupplyPowerSum },
+                            { name: '集输系统:', value: response.oilPowerSum },
+                            { name: '注水系统:', value: response.waterInjectPowerSum },
+                            { name: '水处理系统:', value: response.waterTreatmentPowerSum },
+                        ],
+                        emphasis: {
+                            itemStyle: {
+                                shadowBlur: 10,
+                                shadowOffsetX: 0,
+                                shadowColor: 'rgba(0, 0, 0, 0.5)'
+                            }
+                        }
+                    }
+                ]
+            };
+            initedChart.setOption(myOption);
+        }
+
+        function flagColor(val, row, index) {
+            // if (!row.dataAlreadyAudited || row.dataAlreadyAudited == null) {
+            return 'background:#FFFACD';
+            // }
+        }
+
+        function searchPageData() {
+            let year = $('#query-year').combobox('getValue');
+            $("#display-data-table").datagrid('load', {
+                year: year,
+            });
+        }
+
+        var editIndex = undefined;
+        function endEditing() {//该方法用于关闭上一个焦点的editing状态
+            if (editIndex == undefined) {
+                return true
+            }
+            if ($('#display-data-table').datagrid('validateRow', editIndex)) {
+                $('#display-data-table').datagrid('endEdit', editIndex);
+                editIndex = undefined;
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        function onClickCell(index, field, value) {
+            if (endEditing()) {
+                if (index == 3 || index == 4) {
+                    var row = $('#display-data-table').datagrid('getRows')[index];
+                    $(this).datagrid('beginEdit', index);
+                    var ed = $(this).datagrid('getEditor', { index: index, field: field });
+                    $(ed.target).focus();
+                }
+                editIndex = index;
+            }
+        }
+
+        //单元格失去焦点执行的方法
+        function onAfterEdit(index, row, changes) {
+            var updated = $('#display-data-table').datagrid('getChanges', 'updated');
+            if (updated.length < 1) {
+                editRow = undefined;
+                $('#display-data-table').datagrid('unselectAll');
+                return;
+            } else {
+                submitData(index, row, changes);
+            }
+        }
+
+        //提交数据
+        function submitData(index, row, changes) {
+            $.ajax({
+                type: "get",
+                async: false,
+                url: "/homePage/update",
+                data: {
+                    id: row.myId,
+                    [row.myField]: row.myValue,
+                }
+            })
+        }
+
+        function loadDataGrid(data) {
+            appendRow(data.rows[0].id, "oilfieldGasConsumption", "油田耗气", "10⁴m³", data.rows[0].oilfieldGasConsumption)
+            appendRow(data.rows[0].id, "gasWellProduction", "气井产气", "10⁴m³", data.rows[0].gasWellProduction)
+            appendRow(data.rows[0].id, "deepGas", "深层来气", "10⁴m³", data.rows[0].deepGas)
+            appendRow(data.rows[0].id, "harbinGasSupply", "哈市供气", "10⁴m³", data.rows[0].harbinGasSupply)
+            appendRow(data.rows[0].id, "oilGasUnitSumAve", "吨液耗气", "m³/t", data.rows[0].oilGasUnitSumAve)
+            appendRow(data.rows[0].id, "oilfieldPowerConsumption", "油田耗电", "10⁴kWh", data.rows[0].oilfieldPowerConsumption)
+            appendRow(data.rows[0].id, "waterInjectPumpingUnitSumAve", "注水系统单耗", "kWh/m³", data.rows[0].waterInjectPumpingUnitSumAve)
+            appendRow(data.rows[0].id, "oilPowerUnitSumAve", "集输系统单耗", "kWh/t", data.rows[0].oilPowerUnitSumAve)
+            setPipe(myChart0, data.rows[0]);
+            $("#display-data-table").datagrid("fixRowHeight");//刷新序号列 避免序号列错位
+        }
+
+        function appendRow(id, field, item, unit, value) {
+            $("#display-data-table").datagrid(
+                'appendRow',
+                {
+                    myId: id,
+                    myField: field,
+                    myItem: item,
+                    myUnit: unit,
+                    myValue: value,
+                });
+        }
+
+        // Wrap every letter in a span
+        var textWrapper = document.querySelector('.ml2');
+        textWrapper.innerHTML = textWrapper.textContent.replace(/\S/g, "<span class='letter'>$&</span>");
+
+        anime.timeline({ loop: true })
+            .add({
+                targets: '.ml2 .letter',
+                scale: [4, 1],
+                opacity: [0, 1],
+                translateZ: 0,
+                easing: "easeOutExpo",
+                duration: 1500,
+                delay: (el, i) => 70 * i
+            }).add({
+                targets: '.ml2',
+                opacity: 0,
+                duration: 5000,
+                easing: "easeOutExpo",
+                delay: 5000
+            });
+
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,255 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" xmlns:xunjia="http://www.thymeleaf.org">
+
+<head>
+	<div th:replace="framework/include/head::head"></div>
+</head>
+
+<body>
+	<div class="easyui-layout" fit="true">
+		<div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+			<a>站名称：</a>
+			<select class="easyui-combobox" id="query-stations" data-options="
+                url:'/dmgc_y_zyz/getAll',
+                width: 150,
+                textField: 'mc',
+                valueField: 'eventId',
+                editable: true,
+                loadFilter : function (data) {
+                  if (data) {
+                      data.splice(0, 0, {mc: '全部', eventId: ''});
+                  }
+                  return data;
+              },
+            ">
+			</select>
+			<input id="query-startDate-key" class="easyui-datebox" editable="false" value="true"
+				data-options="width:240,label:'生产日期：' ,labelAlign:'right',labelWidth:90" />
+			<!-- <input id="query-endDate-key" class="easyui-datebox" editable="false" value="true"
+				data-options="width:240,label:'结束时间：' ,labelAlign:'right',labelWidth:90" /> -->
+			<a href="javascript:" onclick="searchPageData();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+			<a href="javascript:" onclick="create_song2();" class="easyui-linkbutton"
+				iconCls="fa fa-cloud-upload">同步数据</a>
+			<a href="javascript:" onclick="auditData();" class="easyui-linkbutton" iconCls="fa fa-search">审核并考核</a>
+			<a href="javascript:" onclick="exportData();" class="easyui-linkbutton"
+				iconCls="fa fa-cloud-download">导出</a>
+		</div>
+		<div data-options="region:'center'">
+			<table id="display-data-table"></table>
+		</div>
+	</div>
+
+	<script th:inline="none">
+		$(function () {
+			$("#display-data-table").datagrid({
+				url: '/dmgc_y_d_zyz/getPageData',
+				fit: true,
+				fitColumns: false,
+				striped: true,
+				loadMsg: '数据加载中，请稍候...',
+				pagination: true,
+				pageSize: 20,
+				rownumbers: true,
+				onClickCell: onClickCell,
+				onAfterEdit: onAfterEdit,
+				queryParams: {
+					'startDate': $("#query-startDate-key").datebox('getValue'),
+					'endDate': $("#query-startDate-key").datebox('getValue'),
+				},
+				columns: [[
+					{ "field": "rq", "title": "日期", width: 110 },
+					// { "field": "zkEventId", "title": "站库主键", width: 110 },
+					{ "field": "stationName", "title": "所属站", width: 110 },
+					{
+						"field": "zhdh", "title": "综合单耗(kWh/t)", width: 110, styler: flagColor,
+						editor: {
+							type: 'numberbox',
+							options: { precision: 2 }
+						}
+					},
+					{
+						"field": "dyhd", "title": "吨液耗电(kWh/t)", width: 110, styler: flagColor,
+						editor: {
+							type: 'numberbox',
+							options: { precision: 2 }
+						}
+					},
+					{
+						"field": "dyhq", "title": "吨液耗气(M3/d)", width: 110, styler: flagColor,
+						editor: {
+							type: 'numberbox',
+							options: { precision: 2 }
+						}
+					},
+					{ "field": "wzlyl", "title": "外站来液量(t/d)", width: 110 },
+					{ "field": "cll", "title": "处理量(M3/d)", width: 110 },
+					{ "field": "wsyl", "title": "外输液量(M3/d)", width: 110 },
+					{ "field": "wsyzl", "title": "外输液质量(t/d)", width: 110 },
+					{ "field": "wssl", "title": "外输水量(M3/d)", width: 110 },
+					{ "field": "csl", "title": "掺水量(M3/d)", width: 110 },
+					{ "field": "cxyl", "title": "掺稀油量(M3/d)", width: 110 },
+					{ "field": "cxywd", "title": "掺稀油温度(℃)", width: 110 },
+					{ "field": "cxyyl", "title": "掺稀油压力(MPa)", width: 110 },
+					{ "field": "rxsl", "title": "热洗水量(M3/d)", width: 110 },
+					{ "field": "wsyhsl", "title": "外输液含水率(%)", width: 110 },
+					{ "field": "wsyfhl", "title": "外输液负荷率(%)", width: 110 },
+					{ "field": "wsymd", "title": "外输液密度(kg3/d)", width: 110 },
+					{ "field": "wssfhl", "title": "外输水负荷率(%)", width: 110 },
+					{ "field": "wsql", "title": "外输气量(M3/d)", width: 110 },
+					{ "field": "hql", "title": "耗气量(M3/d)", width: 110 },
+					{ "field": "fsql", "title": "返输气量(M3/d)", width: 110 },
+					{ "field": "syhdl", "title": "输油耗电量(kWh/d)", width: 110 },
+					{ "field": "sshdl", "title": "输水耗电量(kWh/d)", width: 110 },
+					{ "field": "cshdl", "title": "掺水耗电量(kWh/d)", width: 110 },
+					{ "field": "rxhdl", "title": "热洗耗电量(kWh/d)", width: 110 },
+					{ "field": "zhhdl", "title": "综合耗电量(kWh/d)", width: 110 },
+					{ "field": "ssdh", "title": "输水单耗(kWh/t)", width: 110 },
+					{ "field": "bzlywd", "title": "本站来液温度(℃)", width: 110 },
+					{ "field": "wzlywd", "title": "外站来液温度(℃)", width: 110 },
+					{ "field": "sywd", "title": "输油温度(℃)", width: 110 },
+					{ "field": "csczwd", "title": "掺水出站温度(℃)", width: 110 },
+					{ "field": "csczyl", "title": "掺水出站压力(MPa)", width: 110 },
+					{ "field": "syhgyl", "title": "输油汇管压力(MPa)", width: 110 },
+					{ "field": "rprjyl", "title": "破乳剂用量(kg/d)", width: 110 },
+					{ "field": "rzgjyl", "title": "阻垢剂用量(kg/d)", width: 110 },
+					{ "field": "rldgjjyl", "title": "流动改进剂用量(kg/d)", width: 110 },
+					{ "field": "qtyjyl", "title": "其他药剂用量(kg/d)", width: 110 },
+					{ "field": "syxtxl", "title": "输油系统效率(%)", width: 110 },
+					{ "field": "yxpj", "title": "运行评价", width: 110 },
+					// { "field": "ssdwdm", "title": "所属单位代码", width: 110 },
+					{ "field": "zjs", "title": "总井数", width: 110 },
+					{ "field": "kjs", "title": "开井数", width: 110 },
+					{ "field": "xkjs", "title": "新开井数", width: 110 },
+					{ "field": "xgjs", "title": "新关井数", width: 110 },
+					{ "field": "jkpjhy", "title": "井口平均回压(MPa)", width: 110 },
+					{ "field": "jkcyl", "title": "井口产液量(t/d)", width: 110 },
+					{ "field": "rxjs", "title": "热洗井数", width: 110 },
+					{ "field": "csjs", "title": "掺水井数", width: 110 },
+					// { "field": "allowDelete", "title": "允许删除", width: 110 },
+					{ "field": "rxwd", "title": "热洗温度", width: 110 },
+					{ "field": "rxyl", "title": "热洗压力", width: 110 },
+					{ "field": "zqglpwl", "title": "注汽锅炉排污量(M3/d)", width: 110 },
+					{ "field": "wzlyoul", "title": "外站来油量（t/d）", width: 110 },
+					{ "field": "wsyoul", "title": "外输油量（t/d）", width: 110 },
+					{ "field": "bz", "title": "备注", width: 110 },
+				]]
+			});
+		});
+
+		function searchPageData() {
+			$("#display-data-table").datagrid('load', {
+				'stationName': $('#query-stations').combobox('getText') === '全部' ? '' : $('#query-stations').combobox('getText'),
+				'startDate': $("#query-startDate-key").datebox('getValue'),
+				'endDate': $("#query-startDate-key").datebox('getValue'),
+			});
+		}
+
+		function exportData() {
+			window.open("/dmgc_y_d_zyz/exportData?startDate=" +
+				$("#query-startDate-key").datebox('getValue') +
+				"&endDate=" +
+				$("#query-startDate-key").datebox('getValue'));
+		}
+
+		function flagColor(val, row, index) {
+			return 'background:#FFFACD';
+		}
+
+		var editIndex = undefined;
+		function endEditing() {//该方法用于关闭上一个焦点的editing状态
+			if (editIndex == undefined) {
+				return true
+			}
+			if ($('#display-data-table').datagrid('validateRow', editIndex)) {
+				$('#display-data-table').datagrid('endEdit', editIndex);
+				editIndex = undefined;
+				return true;
+			} else {
+				return false;
+			}
+		}
+
+		function onClickCell(index, field, value) {
+			if (endEditing()) {
+				if (field == "zhdh" || field == "dyhd" || field == "dyhq") {
+					var row = $('#display-data-table').datagrid('getRows')[index];
+					$(this).datagrid('beginEdit', index);
+					var ed = $(this).datagrid('getEditor', { index: index, field: field });
+					$(ed.target).focus();
+				}
+				editIndex = index;
+			}
+		}
+
+		//单元格失去焦点执行的方法
+		function onAfterEdit(index, row, changes) {
+			var updated = $('#display-data-table').datagrid('getChanges', 'updated');
+			if (updated.length < 1) {
+				editRow = undefined;
+				$('#display-data-table').datagrid('unselectAll');
+				return;
+			} else {
+				submitData(index, row, changes);
+			}
+		}
+
+		//提交数据
+		function submitData(index, row, changes) {
+			$.ajax({
+				type: "get",
+				async: false,
+				url: "/dmgc_y_d_zyz/saveData",
+				data: {
+					id: row.eventId,
+					zhdh: row.zhdh,
+					dyhd: row.dyhd,
+					dyhq: row.dyhq,
+				}
+			})
+		}
+
+		function auditData() {
+			$.ajax({
+				type: "get",
+				async: false,
+				url: "/dmgc_y_d_zyz/auditData",
+				data: {
+					"rq": $('#query-startDate-key').datebox('getValue')
+				},
+				success: function (response) {
+					$('#display-data-table').datagrid('reload');
+				}
+			})
+		}
+
+		function importData() {
+			$.ajax({
+				type: "get",
+				url: "http://11.11.111.226:8099/dmgc_y_d_zyz_sync/getA5_Data",
+				data: {
+					startTime: $('#query-startDate-key').datebox('getValue'),
+					endTime: $('#query-startDate-key').datebox('getValue'),
+				},
+				success: function (response) {
+					searchPageData();
+				}
+			})
+		}
+
+		function create_song2() {
+			$.ajax({
+				type: "get",
+				async: false,
+				url: "/dmgc_y_d_zyz/create_DMGC_Y_D_ZYZ",
+				data: {
+					rq: $('#query-startDate-key').datebox('getValue'),
+				},
+				success: function (response) {
+					importData();
+				}
+			})
+		}
+	</script>
+</body>
+
+</html>

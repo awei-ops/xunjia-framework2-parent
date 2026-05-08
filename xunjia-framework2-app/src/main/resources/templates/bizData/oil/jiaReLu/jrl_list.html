@@ -1,0 +1,94 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" xmlns:xunjia="http://www.thymeleaf.org">
+
+<head>
+	<div th:replace="framework/include/head::head"></div>
+	<script type="text/javascript" src="/global/js/ten-factory-formatter.js"></script>
+</head>
+
+<body>
+	<div class="easyui-layout" fit="true">
+		<div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+			<a>所属站：</a>
+			<select class="easyui-combobox" id="query-stations" data-options="
+                url:'/dmgc_y_zyz/getAll',
+                width: 150,
+                textField: 'mc',
+                valueField: 'eventId',
+                editable: true,
+                loadFilter : function (data) {
+                  if (data) {
+                      data.splice(0, 0, {mc: '全部', eventId: ''});　
+                  }
+                  return data;
+              },
+            ">
+			</select>
+			<input id="query-mc-key" class="easyui-textbox"
+				data-options="width:240,label:'名称：' ,labelAlign:'right',labelWidth:90" />
+			<input id="query-znbh-key" class="easyui-textbox"
+				data-options="width:240,label:'站内编号：' ,labelAlign:'right',labelWidth:90" />
+			<a href="javascript:" onclick="searchPageData();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+		</div>
+		<div data-options="region:'center'">
+			<table id="display-data-table"></table>
+		</div>
+	</div>
+
+	<script th:inline="none">
+		$(function () {
+			$("#display-data-table").datagrid({
+				url: '/dmgc_jrl/getPageData',
+				fit: true,
+				fitColumns: false,
+				striped: true,
+				loadMsg: '数据加载中，请稍候...',
+				pagination: true,
+				pageSize: 20,
+				rownumbers: true,
+				columns: [[
+					{ "field": "zlx", "title": "所属站类型", "width": 110 },
+					{ "field": "sszm", "title": "所属站名", "width": 110 },
+					{ "field": "mc", "title": "名称", "width": 110 },
+					{ "field": "znbh", "title": "站内编号", "width": 110 },
+					{ "field": "ggxh", "title": "规格型号", "width": 110 },
+					{ "field": "jrllx", "title": "加热炉类型", "width": 110 ,formatter:jrlFormatter},
+					{ "field": "hrpgs", "title": "换热盘管数", "width": 110 },
+					{ "field": "edgzyl", "title": "额定工作压力（Mpa)", "width": 120 },
+					{ "field": "edcll", "title": "额定处理量（m³/h)", "width": 110 },
+					{ "field": "jrjzlx", "title": "加热介质类型", "width": 110 },
+					{ "field": "aqbhlx", "title": "安全保护类型", "width": 110 },
+					{ "field": "jrlyt", "title": "加热炉用途", "width": 110 },
+					{ "field": "edrfh", "title": "额定热负荷（MW)", "width": 110 },
+					{ "field": "sjwd", "title": "设计温度（℃）", "width": 110 },
+					{ "field": "scrq", "title": "生产日期", "width": 110 },
+					{ "field": "tcrq", "title": "投用日期", "width": 110 },
+					{ "field": "sccj", "title": "生产厂家", "width": 110 },
+					{ "field": "rsqxh", "title": "燃烧器型号", "width": 110 },
+					{ "field": "rsqcj", "title": "燃烧器厂家", "width": 110 },
+					{ "field": "rsqgl", "title": "燃烧器功率（kw)", "width": 110 },
+					{ "field": "rsqscrq", "title": "燃烧器生产日期", "width": 110 },
+					// { "field": "zch", "title": "资产号", "width": 110 },
+					// { "field": "sfbf", "title": "是否报废", "width": 110 },
+					{ "field": "bfrq", "title": "报废日期", "width": 110 },
+					{ "field": "ghrq", "title": "更换日期", "width": 110 },
+					// { "field": "bz", "title": "备注", "width": 110 },
+					// { "field": "sszkTableName", "title": "所属站库表名", "width": 110 },
+					// { "field": "ssdwdm", "title": "所属单位代码", "width": 110 }
+				]]
+			});
+		});
+
+		function searchPageData() {
+			$("#display-data-table").datagrid('load', {
+				'sszm': $('#query-stations').combobox('getText') === '全部' ? '' : $('#query-stations').combobox('getText'),
+				'mc': $("#query-mc-key").textbox('getValue'),
+				'znbh': $("#query-znbh-key").textbox('getValue'),
+			});
+		}
+
+
+	</script>
+</body>
+
+</html>

@@ -1,0 +1,308 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:xunjia="http://www.thymeleaf.org">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+<head>
+  <div th:replace="framework/include/head::head"></div>
+</head>
+
+<body>
+<div class="easyui-layout" fit="true">
+  <div data-options="region:'center'">
+    <table id="display-data-table"></table>
+    <div id="user-operation-bar" class="datagrid-toolbar">
+      <xunjia:button th:menu-id="${menuId}" perm-code="monitoringIndicatorNew:save"/>
+      <xunjia:button th:menu-id="${menuId}" perm-code="monitoringIndicatorNew:update"/>
+      <xunjia:button th:menu-id="${menuId}" perm-code="monitoringIndicatorNew:delete"/>
+    </div>
+  </div>
+</div>
+
+<script th:inline="none">
+     var queryType =getUrlParam('type');
+     switch(queryType){
+          case 'jrlzbyq':
+              queryType='燃气加热炉监测项目与指标要求';
+              break;
+          case 'jsbzbyq':
+              queryType='注水泵机组监测项目与指标要求';
+              break;
+          case 'sclzyq':
+              queryType='水处理站监测项目与指标要求';
+              break;
+          case 'sybyq':
+              queryType='输油泵机组监测项目与指标要求';
+              break;
+          case 'csbyq':
+              queryType='掺水泵机组监测项目与指标要求';
+              break;
+          case 'zyzyq':
+              queryType='转油站监测项目与指标要求';
+              break;
+          case 'tszyq':
+              queryType='脱水站监测项目与指标要求';
+              break;
+          case 'zxjxzb':
+              queryType='纵向绩效指标要求';
+              break;
+          default:
+              queryType='';
+      }
+	$(function(){
+		$("#display-data-table").datagrid({
+			url: '/monitoringIndicatorNew/getPageData?type=' + queryType,
+			idField: 'id',
+			fit: true,
+			fitColumns: false,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: true,
+			pageSize: 20,
+			rownumbers: true,
+			toolbar: "#user-operation-bar",
+			columns: [[
+				{
+					field: 'id',
+					checkbox: true
+				},
+				{
+					field: 'typeName',
+					title: '指标要求',
+				},
+				{
+					field: 'valueMax',
+					title: '分组值上限(X< 或 X<=)',
+				},
+				{
+					field: 'valueMin',
+					title: '分组值下限(X> 或 X>=)',
+				},
+				{
+					field: 'monitoringItem',
+					title: '监测项目',
+				},
+				{
+					field: 'unitOfMeasurement',
+					title: '单位',
+				},
+				{
+					field: 'monitoringItemLimit',
+					title: '监测项目限定值',
+				},
+				{
+					field: 'monitoringItemLimitScore',
+					title: '监测项目限定值对应分值',
+				},
+				{
+					field: 'monitoringItemEnergy',
+					title: '监测项目节能(标杆)值',
+				},
+				{
+					field: 'monitoringItemEnergyScore',
+					title: '监测项目节能值(标杆)对应分值',
+				},
+				{
+					field: 'itemMinEvaluation',
+					title: '监测项目最低评价',
+				},
+				{
+					field: 'itemMidEvaluation',
+					title: '监测项目中等评价',
+				},
+				{
+					field: 'itemMaxEvaluation',
+					title: '监测项目最高评价',
+				},
+				{
+					field: 'monitoringItemMin',
+					title: '监测项目最小值',
+				},
+				{
+					field: 'monitoringItemMinScore',
+					title: '监测项目最小值对应分值',
+				},
+				{
+					field: 'monitoringItemMax',
+					title: '监测项目最大值',
+				},
+				{
+					field: 'monitoringItemMaxScore',
+					title: '监测项目最大值对应分值',
+				},
+				{
+					field: 'orderNo',
+					title: '排序',
+				}
+			]]
+		});
+	});
+
+	function getUrlParam(name) {
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)"); //构造一个含有目标参数的正则表达式对象
+        var r = window.location.search.substr(1).match(reg);  //匹配目标参数
+        if (r != null) return unescape(r[2]); return null; //返回参数值
+    }
+
+	function add(){
+		var addDialog = $("<div></div>").dialog({
+			title: '添加数据',
+			width: 630,
+			height: 600,
+			modal: true,
+			iconCls: "fa fa-pencil-square-o",
+			href: '/monitoringIndicatorNew/toAdd',
+			onLoad: function(){
+			    $("#monitoring-typeName").val(queryType);
+			},
+			onClose : function() {
+                $(this).dialog('destroy');
+            },
+			buttons: [
+				{
+					text: '保存',
+					iconCls: 'fa fa-save',
+					handler: function(){
+						submitDataForm("add-form", addDialog, "/monitoringIndicatorNew/save");
+					}
+				},
+				{
+					text: '关闭',
+					iconCls: 'fa fa-close',
+					handler: function() {
+						addDialog.dialog('destroy');
+					}
+				}
+			]
+		});
+	}
+
+	function edit(){
+		var selectedRows = $("#display-data-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要编辑的记录。", "warning");
+		} else if (selectedRows.length > 1){
+			$.messager.alert("提示信息", "您只能选择一条记录进行操作。", "warning");
+		} else {
+			var editDialog = $("<div></div>").dialog({
+				title: '编辑数据',
+				width: 630,
+				height: 600,
+				modal: true,
+				iconCls: "fa fa-pencil-square-o",
+				href: '/monitoringIndicatorNew/toEdit',
+				onClose : function() {
+	                $(this).dialog('destroy');
+	            },
+				onLoad: function(){
+					$.ajax({
+						url: '/monitoringIndicatorNew/findById',
+						data: { id: selectedRows[0].id },
+						type: 'get',
+						dataType: 'json',
+						success: function(data){
+							$("#monitoring-id").val(data.id);
+							$("#monitoring-typeName").val(data.typeName);
+							$("#monitoring-valueMax").numberbox('setValue', data.valueMax);
+							$("#monitoring-valueMin").numberbox('setValue', data.valueMin);
+							$("#monitoring-monitoringItem").textbox('setValue', data.monitoringItem);
+							$("#monitoring-unitOfMeasurement").textbox('setValue', data.unitOfMeasurement);
+							$("#monitoring-monitoringItemLimit").numberbox('setValue', data.monitoringItemLimit);
+							$("#monitoring-monitoringItemLimitScore").numberbox('setValue', data.monitoringItemLimitScore);
+							$("#monitoring-monitoringItemEnergy").numberbox('setValue', data.monitoringItemEnergy);
+							$("#monitoring-monitoringItemEnergyScore").numberbox('setValue', data.monitoringItemEnergyScore);
+							$("#monitoring-itemMinEvaluation").textbox('setValue', data.itemMinEvaluation);
+							$("#monitoring-itemMidEvaluation").textbox('setValue', data.itemMidEvaluation);
+							$("#monitoring-itemMaxEvaluation").textbox('setValue', data.itemMaxEvaluation);
+							$("#monitoring-monitoringItemMin").numberbox('setValue', data.monitoringItemMin);
+							$("#monitoring-monitoringItemMinScore").numberbox('setValue', data.monitoringItemMinScore);
+							$("#monitoring-monitoringItemMax").numberbox('setValue', data.monitoringItemMax);
+							$("#monitoring-monitoringItemMaxScore").numberbox('setValue', data.monitoringItemMaxScore);
+							$("#monitoring-orderNo").numberbox('setValue', data.orderNo);
+						}
+					});
+				},
+				buttons: [
+					{
+						text: '保存',
+						iconCls: 'fa fa-save',
+						handler: function(){
+							submitDataForm("edit-form", editDialog, "/monitoringIndicatorNew/update");
+						}
+					},
+					{
+						text: '关闭',
+						iconCls: 'fa fa-close',
+						handler: function(){
+							editDialog.dialog('destroy');
+						}
+					}
+				]
+			});
+		}
+	}
+
+	function dataRemove(){
+		var selectedRows = $("#display-data-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要删除的记录。", "warning");
+		} else {
+			$.messager.confirm('删除确认', '您是否确认要删除选中的记录？', function(r){
+				if (r){
+					var ids = new Array();
+					$.each(selectedRows, function(i, n){
+						ids[i] = n.id;
+					});
+
+					$.ajax({
+						url: '/monitoringIndicatorNew/delete',
+						data: { "ids[]": ids },
+						type: 'post',
+						dataType: 'json',
+						success: function(data){
+							if (data.result){
+								$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+								$("#display-data-table").datagrid("reload");
+								$("#display-data-table").datagrid("clearSelections");
+							} else {
+								$.messager.alert("提示信息", data.msg, "error");
+							}
+						}
+					});
+				}
+			});
+		}
+	}
+
+	function submitDataForm(formId, dialog, url){
+	    var validate;
+		$("#" + formId).form('submit', {
+			url: url,
+			onSubmit: function(){
+			    validate = $(this).form("validate");
+                return validate;
+			},
+			success: function(data){
+			    if(validate){
+                    data = $.parseJSON(data);
+                    if (data.result){
+                        dialog.dialog("destroy");
+                        $.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+                        $("#display-data-table").datagrid("reload");
+                        $("#display-data-table").datagrid("clearSelections");
+                    } else {
+                        $.messager.alert("提示信息", data.msg, "error");
+                    }
+				}
+			}
+		});
+	}
+	function searchPageData(){
+		$("#display-data-table").datagrid('load', {
+			'type':$("#indicators-query-type").combobox('getValue')
+		});
+	}
+</script>
+</body>
+</html>

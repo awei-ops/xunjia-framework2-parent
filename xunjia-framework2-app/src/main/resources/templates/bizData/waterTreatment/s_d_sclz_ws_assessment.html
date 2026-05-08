@@ -1,0 +1,96 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" xmlns:xunjia="http://www.thymeleaf.org">
+
+<head>
+	<div th:replace="framework/include/head::head"></div>
+</head>
+
+<body>
+	<div class="easyui-layout" fit="true">
+		<div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+			<input id="query-assessmentDate-key" class="easyui-datebox" editable="false" value="true"
+				data-options="width:240,label:'考核时间：' ,labelAlign:'right',labelWidth:90" />
+		</div>
+		<div data-options="region:'center'">
+			<table id="display-data-table"></table>
+			<div id="user-operation-bar" class="datagrid-toolbar">
+				<a>评价周期：</a>
+				<input type="radio" checked="checked" name="cycle" value="日">日
+				<input type="radio" name="cycle" value="月">月
+				<input type="radio" name="cycle" value="年">年
+				<a href="javascript:" onclick="searchPageData();" class="easyui-linkbutton"
+					iconCls="fa fa-calculator">考核得分</a>
+				<a href="javascript:" onclick="benchmarkDetail();" class="easyui-linkbutton"
+					iconCls="fa fa-cog">指标明细</a>
+				<xunjia:button th:menu-id="${menuId}" perm-code="dmgc_s_d_sclzrsj:export" />
+			</div>
+		</div>
+	</div>
+
+	<script th:inline="none">
+		$(function () {
+			$("#display-data-table").datagrid({
+				url: '/dmgc_s_d_sclzrsj/getAssessment',
+				fit: true,
+				fitColumns: false,
+				striped: true,
+				loadMsg: '数据加载中，请稍候...',
+				pagination: true,
+				pageSize: 20,
+				rownumbers: true,
+				queryParams: {
+					cycle: $('input:radio:checked').val(),
+					assessmentDate: $("#query-assessmentDate-key").datebox('getValue'),
+				},
+				toolbar: "#user-operation-bar",
+				columns: [[
+					{ "field": "zkEventId", "title": "水处理站ID", "width": 110 },
+					{ "field": "rq", "title": "日期", "width": 110 },
+					{ "field": "lssl", "title": "来水水量", "width": 110 },
+					{ "field": "rwssl", "title": "外输水量", "width": 110 },
+					{ "field": "rhdl", "title": "综合用电量", "width": 110 },
+					{ "field": "wswsdh", "title": "污水单耗", "width": 110 },
+					{ "field": "wsdhdf", "title": "绩效评价", "width": 110 }
+				]]
+			});
+		});
+
+		function benchmarkDetail() {
+			var dialog = $("<div id='dd'></div>").dialog({
+				title: '指标明细',
+				width: 1100,
+				height: 400,
+				modal: true,
+				iconCls: "fa fa-pencil-square-o",
+				href: '/benchmarks/toDisplay',
+				queryParams: { benchmarkType: '污水处理站' },
+				onClose: function () {
+					$(this).dialog('destroy');
+				},
+				buttons: [
+					{
+						text: '关闭',
+						iconCls: 'fa fa-close',
+						handler: function () {
+							dialog.dialog('destroy');
+						}
+					}
+				]
+			});
+		}
+
+		function searchPageData() {
+			$("#display-data-table").datagrid('load', {
+				'cycle': $('input:radio:checked').val(),
+				'assessmentDate': $("#query-assessmentDate-key").datebox('getValue'),
+			});
+		}
+
+		function exportData() {
+			window.open("/dmgc_s_d_sclzrsj/exportData");
+		}
+
+	</script>
+</body>
+
+</html>

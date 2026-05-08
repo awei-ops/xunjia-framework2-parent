@@ -1,0 +1,165 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" xmlns:xunjia="http://www.thymeleaf.org">
+
+<head>
+  <div th:replace="framework/include/head::head"></div>
+  <script type="text/javascript" src="/global/js/echarts/echarts.min.js"></script>
+</head>
+
+<body>
+  <div class="easyui-layout" fit="true">
+    <div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+      <input id="query-startDate-key" class="easyui-datebox" editable="false" value="true"
+        data-options="width:240,label:'开始时间：' ,labelAlign:'right',labelWidth:90" />
+      <input id="query-endDate-key" class="easyui-datebox" editable="false" value="true"
+        data-options="width:240,label:'结束时间：' ,labelAlign:'right',labelWidth:90" />
+      <a href="javascript:" onclick="searchPageData();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+    </div>
+    <div data-options="region:'center'">
+      <table id="display-data-table"></table>
+      <div id="user-operation-bar" class="datagrid-toolbar">
+        <a>统计周期：</a>
+        <input type="radio" name="cycle" value="日" checked="checked">日
+        <input type="radio" name="cycle" value="月">月
+        <input type="radio" name="cycle" value="年">年
+        <a href="javascript:" onclick="chart('dyehd');" class="easyui-linkbutton" iconCls="fa fa-line-chart">吨液耗电曲线</a>
+        <a href="javascript:" onclick="chart('dyohd');" class="easyui-linkbutton" iconCls="fa fa-line-chart">吨油耗电曲线</a>
+        <a href="javascript:" onclick="chart('dyehq');" class="easyui-linkbutton" iconCls="fa fa-line-chart">吨液耗气曲线</a>
+        <a href="javascript:" onclick="chart('dyohq');" class="easyui-linkbutton" iconCls="fa fa-line-chart">吨油耗气曲线</a>
+        <a href="javascript:" onclick="chart('zhdh');" class="easyui-linkbutton" iconCls="fa fa-line-chart">综合单耗曲线</a>
+        <xunjia:button th:menu-id="${menuId}" perm-code="dmgc_s_d_zszrsj:export" />
+      </div>
+    </div>
+  </div>
+
+  <script th:inline="none">
+    $(function () {
+      $("#display-data-table").datagrid({
+        url: '/dmgc_y_d_tsz_new/getDataOfDay',
+        fit: true,
+        fitColumns: false,
+        striped: true,
+        loadMsg: '数据加载中，请稍候...',
+        pagination: false,
+        pageSize: 20,
+        rownumbers: true,
+        toolbar: "#user-operation-bar",
+        queryParams: {
+          startDate: $("#query-startDate-key").datebox('getValue'),
+          endDate: $("#query-endDate-key").datebox('getValue')
+        },
+        columns: [[
+          { "field": "zmc", "title": "站名称", "width": 110 },
+          { "field": "rq", "title": "日期", "width": 110 },
+          { "field": "dyehd", "title": "吨液耗电", "width": 110 },
+          { "field": "dyohd", "title": "吨油耗电", "width": 110 },
+          { "field": "dyehq", "title": "吨液耗气", "width": 110 },
+          { "field": "dyohq", "title": "吨油耗气", "width": 110 },
+          { "field": "zhdh", "title": "综合单耗", "width": 110 }]]
+      });
+    });
+
+    function chart(type) {
+      var startDate = $("#query-startDate-key").datebox('getValue');
+      var endDate = $("#query-endDate-key").datebox('getValue');
+      var cycle = $('input:radio:checked').val();
+      var type = type;
+      if (startDate == "" || endDate == "") {
+        $.messager.alert("提示信息", "您未选择要统计的范围。", "warning");
+      } else {
+        var editDialog = $("<div></div>").dialog({
+          title: '统计信息',
+          width: 1400,
+          height: 550,
+          modal: true,
+          iconCls: "fa fa-pencil-square-o",
+          href: '/dmgc_y_d_tsz_new/toChart',
+          onClose: function () {
+            $(this).dialog('destroy');
+          },
+          onLoad: function () {
+            var myChart = echarts.init(document.getElementById('chart'));
+            $.ajax({
+              url: '/dmgc_y_d_tsz_new/getStatistics',
+              data: {
+                'startDate': startDate,
+                'endDate': endDate,
+                'cycle': cycle,
+                'type': type
+              },
+              type: 'get',
+              dataType: 'json',
+              success: function (response) {
+                var option = {
+                  title: {
+                    x: 'center',
+                    text: response.title
+                  },
+                  tooltip: {
+                    trigger: 'axis'
+                  },
+                  legend: {
+                    orient: 'vertical',
+                    x: 'right',
+                    y: 'center',
+                    data: response.legend
+                  },
+                  grid: {
+                    left: '3%',
+                    right: '10%',
+                    bottom: '3%',
+                    containLabel: true
+                  },
+                  xAxis: {
+                    type: 'category',
+                    boundaryGap: false,
+                    data: response.xaxis
+                  },
+                  yAxis: {
+                    type: 'value'
+                  },
+                  series: response.series
+                }
+                myChart.setOption(option);
+              }
+            });
+          },
+          buttons: [
+            {
+              text: '关闭',
+              iconCls: 'fa fa-close',
+              handler: function () {
+                editDialog.dialog('destroy');
+              }
+            }
+          ]
+        });
+      }
+    }
+
+    function searchPageData() {
+      var startDate = $("#query-startDate-key").datebox('getValue');
+      var endDate = $("#query-endDate-key").datebox('getValue');
+      var cycle = $('input:radio:checked').val();
+      var url = "/dmgc_y_d_tsz_new/getDataOfDay";
+      if (cycle === "月") {
+        url = "/dmgc_y_d_tsz_new/getSumDataOfMonth";
+      }
+      if (cycle === "年") {
+        url = "/dmgc_y_d_tsz_new/getSumDataOfYear";
+      }
+      var op = $('#display-data-table').datagrid('options');
+      op.url = url;
+      var queryParams = {
+        'startDate': startDate,
+        'endDate': endDate
+      };
+      op.queryParams = queryParams;
+      $('#display-data-table').datagrid('reload');
+    }
+
+
+  </script>
+</body>
+
+</html>

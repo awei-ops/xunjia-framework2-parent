@@ -1,0 +1,221 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" xmlns:xunjia="http://www.thymeleaf.org">
+
+<head>
+  <div th:replace="framework/include/head::head"></div>
+  <script type="text/javascript" src="/global/js/echarts/echarts.min.js"></script>
+</head>
+
+<body>
+  <div class="easyui-layout" fit="true">
+    <div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+      <input id="query-rq-key" class="easyui-datebox" editable="false" value="true"
+        data-options="width:240,label:'日期：' ,labelAlign:'right',labelWidth:90" />
+      <a>选择注水站：</a>
+      <select class="easyui-combobox" id="query-zsz-key" data-options="
+						width: 240,
+						url: '/dmgc_s_zsz/getAll',
+						textField: 'mc',
+						valueField: 'eventId',
+                        mode:'local',
+                        editable : true,
+                        onSelect:function(rec){
+                                $('#query-jb-key').combobox('clear');
+                                $('#query-jb-key').combobox('reload', '/dmgc_s_jb/getByZszId?zszId=' + rec.eventId);
+                                     },
+                        prompt:'请选择站名称',
+                        filter: function(q, row){
+                        var opts = $(this).combobox('options');
+                        return row[opts.textField].indexOf(q) >= 0;
+                       }
+					">
+      </select>
+      <a>选择泵：</a>
+      <input id="query-jb-key" class="easyui-combobox" data-options="
+            width: 240,
+            textField: 'mc',
+            valueField: 'eventId',
+            mode:'local',
+            editable : true,
+     		prompt:'请先选择站名称',
+     		filter: function(q, row){
+                        var opts1 = $(this).combobox('options');
+                        return row[opts1.textField].indexOf(q) >= 0;
+                       }
+    	">
+      <a href="javascript:" onclick="searchData();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+    </div>
+    <div data-options="region:'center'">
+      <table id="display-data-table"></table>
+      <div id="user-operation-bar" class="datagrid-toolbar">
+        <a href="javascript:" onclick="chart();" class="easyui-linkbutton" iconCls="fa fa-pie-chart">状态饼图</a>
+        <xunjia:button th:menu-id="${menuId}" perm-code="dmgc_s_d_zszrsj:export" />
+      </div>
+    </div>
+  </div>
+
+  <script th:inline="none">
+    $(function () {
+      $("#display-data-table").datagrid({
+        url: '/dmgc_s_d_zsbrsj/query',
+        fit: true,
+        fitColumns: false,
+        striped: true,
+        loadMsg: '数据加载中，请稍候...',
+        pagination: false,
+        pageSize: 20,
+        rownumbers: true,
+        queryParams: {
+          rq: $("#query-rq-key").datebox('getValue'),
+          zszId: $("#query-zsz-key").combobox('getValue')
+        },
+        toolbar: "#user-operation-bar",
+        columns: [[
+          { "field": "jbName", "title": "机泵名称", "width": 110 },
+          { "field": "zszName", "title": "注水站名称", "width": 110 },
+          { "field": "rq", "title": "日期", "width": 110 },
+          { "field": "jbType", "title": "机泵类型", "width": 110 },
+          { "field": "bxl", "title": "泵水量", "width": 110 },
+          { "field": "rydl", "title": "用电量", "width": 110 },
+          { "field": "bsdh", "title": "泵水单耗", "width": 110 },
+          { "field": "yxzt", "title": "运行状态", "width": 110 },
+          { "field": "ll", "title": "流量", "width": 110 },
+          { "field": "jlssl", "title": "节流损失率", "width": 110 },
+          { "field": "bx", "title": "泵效", "width": 110 },
+          { "field": "runningState", "title": "泵运行状态区分", "width": 110 },
+          { "field": "bxpj", "title": "机组效率评价", "width": 110 },
+          { "field": "bxScore", "title": "泵效得分", "width": 110 },
+          { "field": "lossScore", "title": "损失率分值", "width": 110 },
+          { "field": "sspj", "title": "损失率评价", "width": 110 }
+        ]]
+      });
+    });
+
+    function chart() {
+      var rq = $("#query-rq-key").datebox('getValue');
+      var zszId = $("#query-zsz-key").combobox('getValue');
+      if (rq == "") {
+        $.messager.alert("提示信息", "请选择要统计的时间及注水站。", "warning");
+      } else {
+        var editDialog = $("<div></div>").dialog({
+          title: '统计信息',
+          width: 1400,
+          height: 550,
+          modal: true,
+          iconCls: "fa fa-pencil-square-o",
+          href: '/dmgc_s_d_zsbrsj/toBxAssessment',
+          onClose: function () {
+            $(this).dialog('destroy');
+          },
+          onLoad: function () {
+            var firstChart = echarts.init(document.getElementById('first'));
+            var secondChart = echarts.init(document.getElementById('second'));
+            $.ajax({
+              url: '/dmgc_s_d_zsbrsj/getRunningState',
+              data: {
+                'rq': rq,
+                'zszId': zszId
+              },
+              type: 'get',
+              dataType: 'json',
+              success: function (response) {
+                var option1 = {
+                  title: {
+                    left: 'center',
+                    text: response.title
+                  },
+                  tooltip: {
+                    trigger: 'item'
+                  },
+                  legend: {
+                    orient: 'vertical',
+                    left: 'right',
+                  },
+                  series: [{
+                    name: response.title,
+                    type: 'pie',
+                    radius: '50%',
+                    data: response.series,
+                    emphasis: {
+                      itemStyle: {
+                        shadowBlur: 10,
+                        shadowOffsetX: 0,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                      }
+                    }
+                  }
+                  ]
+                }
+                firstChart.setOption(option1);
+              }
+            });
+
+            $.ajax({
+              url: '/dmgc_s_d_zsbrsj/getThrottlingLoss',
+              data: {
+                'rq': rq,
+                'zszId': zszId
+              },
+              type: 'get',
+              dataType: 'json',
+              success: function (response) {
+                var option2 = {
+                  title: {
+                    left: 'center',
+                    text: response.title
+                  },
+                  tooltip: {
+                    trigger: 'item'
+                  },
+                  legend: {
+                    orient: 'vertical',
+                    left: 'right',
+                  },
+                  series: [{
+                    name: response.title,
+                    type: 'pie',
+                    radius: '50%',
+                    data: response.series,
+                    emphasis: {
+                      itemStyle: {
+                        shadowBlur: 10,
+                        shadowOffsetX: 0,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                      }
+                    }
+                  }
+                  ]
+                }
+                secondChart.setOption(option2);
+              }
+            });
+          },
+          buttons: [
+            {
+              text: '关闭',
+              iconCls: 'fa fa-close',
+              handler: function () {
+                editDialog.dialog('destroy');
+              }
+            }
+          ]
+        });
+      }
+    }
+
+    function searchData() {
+      $("#display-data-table").datagrid('load', {
+        'rq': $("#query-rq-key").datebox('getValue'),
+        'zszId': $("#query-zsz-key").combobox('getValue'),
+        'jbId': $("#query-jb-key").combobox('getValue'),
+      });
+    }
+
+    function exportData() {
+      window.open("/dmgc_s_d_zszrsj/exportData");
+    }
+
+  </script>
+</body>
+
+</html>

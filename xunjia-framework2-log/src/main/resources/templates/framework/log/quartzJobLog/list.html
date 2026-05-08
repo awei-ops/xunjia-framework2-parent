@@ -1,0 +1,144 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:bf="http://www.thymeleaf.org">
+
+<head>
+    <div th:replace="framework/include/head::head"></div>
+</head>
+
+<body>
+<div class="easyui-layout" fit="true">
+    <div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+        <input id="start-date" class="easyui-datebox"
+               data-options="width:210,editable:false,label:'起始日期：' ,labelAlign:'right',labelWidth:80"/>
+        <input id="end-date" class="easyui-datebox"
+               data-options="width:210,editable:false,label:'截止日期：' ,labelAlign:'right',labelWidth:80"/>
+        <input id="jobName" class="easyui-textbox"
+               data-options="width:210,label:'任务名称：' ,labelAlign:'right',labelWidth:80"/>
+        <!--<input id="username" class="easyui-textbox" data-options="width:210,label:'操作人：' ,labelAlign:'right',labelWidth:80" />-->
+        <select id="executeResult" class="easyui-combobox"
+                data-options="width:210,editable:false,panelHeight:'auto',labelWidth:80,label:'执行结果',labelAlign:'right'">
+            <option value="" selected>全部</option>
+            <option value="true">成功</option>
+            <option value="false">失败</option>
+        </select>
+        <a href="javascript:" onclick="searchLoggingEvent();" class="easyui-linkbutton info"
+           iconCls="fa fa-search">查询</a>
+    </div>
+    <div data-options="region:'center'">
+        <table id="logging-event-table"></table>
+    </div>
+</div>
+
+<script th:inline="none">
+	var tableData = null;
+	$(function(){
+		$("#logging-event-table").datagrid({
+			url: '/quartzJobLogs/findQuartzJobLogs',
+			idField: 'id',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: true,
+			pageSize: 20,
+			rownumbers: true,
+			method: 'get',
+			columns: [[
+				{
+					field: 'jobName',
+					title: '任务名称',
+					width: 100
+				}, {
+					field: 'jobInstId',
+					title: '任务实例id',
+					width: 100
+				}, {
+					field: 'executeResult',
+					title: '执行结果',
+					width: 80,
+					formatter: function(value, row, index){
+						if (value != null){
+							return value ? '成功' : '失败';
+						}
+					}
+				}, {
+					field: 'startTime',
+					title: '执行时间',
+					width: 80,
+				}, {
+					field: 'finishTime',
+					title: '结束时间',
+					width: 80,
+				}, {
+					field: 'a',
+					title: '操作',
+					width: 50,
+					formatter: function(value, row, index){
+						return "<a name='viewBtn' class='info' onclick=\"viewLog('" + row.id + "');\" style='height:30px;'></a>";
+					}
+				}
+			]],
+			onLoadSuccess: function (data) {
+				tableData = data;
+				$("a[name='viewBtn']").linkbutton({text: '&nbsp;查&emsp;看&nbsp;', plain: true});
+			}
+		});
+	});
+	
+	function searchLoggingEvent(){
+		var startDate = $("#start-date").datebox('getValue');
+		var endDate = $("#end-date").datebox('getValue');
+		$("#logging-event-table").datagrid('load', {
+			startDate: startDate,
+			endDate: endDate,
+			jobName: $("#jobName").textbox('getValue'),
+			executeResult: $('#executeResult').combobox('getValue')
+		});
+	}
+	
+	function viewLog(id){
+		var quartzJobLog = null;
+		$.each(tableData.rows, function(i, n){
+			if (n.id == id){
+				quartzJobLog = n;
+				return;
+			}
+		});
+
+		var viewDialog = $("<div></div>").dialog({
+			title: '查看操作日志',
+			width: 800,
+			height: 750,
+			modal: true,
+			iconCls: "fa fa-pencil-square-o",
+			href: '/quartzJobLogs/toView',
+			onLoad: function(){
+					$("#td_jobName").html(quartzJobLog.jobName);
+					$("#td_jobInstId").html(quartzJobLog.jobInstId);
+					$("#td_startTime").html(quartzJobLog.startTime);
+					$("#td_finishTime").html(quartzJobLog.finishTime);
+					if (quartzJobLog.executeResult != null){
+						$("#td_executeResult").html(quartzJobLog.executeResult ? '成功' : '失败');
+					}
+					$("#td_executeMsg").html(quartzJobLog.executeMsg);
+			},
+			onClose : function() {
+                $(this).dialog('destroy');
+            },
+			buttons: [
+				{
+					text: '关闭',
+					iconCls: 'fa fa-close',
+					handler: function() {
+						viewDialog.dialog('destroy');
+					}
+				}
+			]
+		});
+	}
+
+</script>
+</body>
+</html>

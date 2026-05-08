@@ -1,0 +1,194 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" xmlns:xunjia="http://www.thymeleaf.org">
+
+<head>
+  <div th:replace="framework/include/head::head"></div>
+  <script type="text/javascript" src="/global/js/echarts/echarts.min.js"></script>
+</head>
+
+<body>
+  <div class="easyui-layout" fit="true">
+    <div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+      <input id="query-assessmentDate-key" class="easyui-datebox" editable="false" value="true"
+        data-options="width:240,label:'考核时间：' ,labelAlign:'right',labelWidth:90" />
+    </div>
+    <div data-options="region:'center'">
+      <table id="display-data-table"></table>
+      <div id="user-operation-bar" class="datagrid-toolbar">
+        <a>评价周期：</a>
+        <input type="radio" checked="checked" name="cycle" value="日">日
+        <input type="radio" name="cycle" value="月">月
+        <input type="radio" name="cycle" value="年">年
+        <a href="javascript:" onclick="searchPageData();" class="easyui-linkbutton" iconCls="fa fa-calculator">考核得分</a>
+        <a href="javascript:" onclick="chart('dyehd');" class="easyui-linkbutton" iconCls="fa fa-line-chart">运行状态图</a>
+        <xunjia:button th:menu-id="${menuId}" perm-code="dmgc_y_d_syb:export" />
+      </div>
+    </div>
+  </div>
+
+  <script th:inline="none">
+    $(function () {
+      $("#display-data-table").datagrid({
+        url: '/dmgc_y_d_syb/getAssessment',
+        fit: true,
+        fitColumns: false,
+        striped: true,
+        loadMsg: '数据加载中，请稍候...',
+        pagination: true,
+        pageSize: 20,
+        rownumbers: true,
+        queryParams: {
+          cycle: $('input:radio:checked').val(),
+          assessmentDate: $('#query-assessmentDate-key').datebox('getValue'),
+        },
+        toolbar: "#user-operation-bar",
+        columns: [[
+          { "field": "zm", "title": "所属站名称", "width": 110 },
+          { "field": "sybbh", "title": "机泵编号", "width": 110 },
+          { "field": "rq", "title": "累计截止日期", "width": 110 },
+          { "field": "pjll", "title": "平均流量", "width": 110 },
+          { "field": "ckyl", "title": "出口压力", "width": 110, "width": 110 },
+          { "field": "jkyl", "title": "进口压力", "width": 110 },
+          { "field": "runningState", "title": "设备运行状态", "width": 110 },
+          { "field": "dl", "title": "电流", "width": 110 },
+          { "field": "dy", "title": "电压", "width": 110 },
+          { "field": "sybxl", "title": "泵效率", "width": 110 },
+          { "field": "jlssl", "title": "节流损失率", "width": 110 },
+          { "field": "sybxlScore", "title": "泵效得分", "width": 110 },
+          { "field": "weight_sybxl", "title": "泵效权重", "width": 110 },
+          { "field": "weight_sybxlScore", "title": "泵效权重得分", "width": 110 },
+          { "field": "jlsslScore", "title": "节流损失率得分", "width": 110 },
+          { "field": "weight_jlssl", "title": "节流损失率权重", "width": 110 },
+          { "field": "weight_jlsslScore", "title": "节流损失率权重得分", "width": 110 },
+          { "field": "jxScore", "title": "综合得分", "width": 110 }
+        ]]
+      });
+    });
+
+    function searchPageData() {
+      $("#display-data-table").datagrid('load', {
+        'cycle': $('input:radio:checked').val(),
+        'assessmentDate': $("#query-assessmentDate-key").datebox('getValue'),
+      });
+    }
+
+    function exportData() {
+      window.open("/dmgc_y_d_syb/exportData");
+    }
+
+    function chart() {
+      var rq = $("#query-assessmentDate-key").datebox('getValue');
+      //var zid = $("#query-zsz-key").combobox('getValue');
+      if (rq == "") {
+        $.messager.alert("提示信息", "请选择要统计的时间及注水站。", "warning");
+      } else {
+        var editDialog = $("<div></div>").dialog({
+          title: '统计信息',
+          width: 1400,
+          height: 550,
+          modal: true,
+          iconCls: "fa fa-pencil-square-o",
+          href: '/dmgc_y_d_syb/toBxAssessment',
+          onClose: function () {
+            $(this).dialog('destroy');
+          },
+          onLoad: function () {
+            var firstChart = echarts.init(document.getElementById('first'));
+            var secondChart = echarts.init(document.getElementById('second'));
+            $.ajax({
+              url: '/dmgc_y_d_syb/getRunningState',
+              data: {
+                'rq': rq,
+                'zid': null
+              },
+              type: 'get',
+              dataType: 'json',
+              success: function (response) {
+                var option1 = {
+                  title: {
+                    left: 'center',
+                    text: response.title
+                  },
+                  tooltip: {
+                    trigger: 'item'
+                  },
+                  legend: {
+                    orient: 'vertical',
+                    left: 'right',
+                  },
+                  series: [{
+                    name: response.title,
+                    type: 'pie',
+                    radius: '50%',
+                    data: response.series,
+                    emphasis: {
+                      itemStyle: {
+                        shadowBlur: 10,
+                        shadowOffsetX: 0,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                      }
+                    }
+                  }
+                  ]
+                }
+                firstChart.setOption(option1);
+              }
+            });
+
+            $.ajax({
+              url: '/dmgc_y_d_syb/getThrottlingLoss',
+              data: {
+                'rq': rq,
+                'zid': null
+              },
+              type: 'get',
+              dataType: 'json',
+              success: function (response) {
+                var option2 = {
+                  title: {
+                    left: 'center',
+                    text: response.title
+                  },
+                  tooltip: {
+                    trigger: 'item'
+                  },
+                  legend: {
+                    orient: 'vertical',
+                    left: 'right',
+                  },
+                  series: [{
+                    name: response.title,
+                    type: 'pie',
+                    radius: '50%',
+                    data: response.series,
+                    emphasis: {
+                      itemStyle: {
+                        shadowBlur: 10,
+                        shadowOffsetX: 0,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                      }
+                    }
+                  }
+                  ]
+                }
+                secondChart.setOption(option2);
+              }
+            });
+          },
+          buttons: [
+            {
+              text: '关闭',
+              iconCls: 'fa fa-close',
+              handler: function () {
+                editDialog.dialog('destroy');
+              }
+            }
+          ]
+        });
+      }
+    }
+
+  </script>
+</body>
+
+</html>

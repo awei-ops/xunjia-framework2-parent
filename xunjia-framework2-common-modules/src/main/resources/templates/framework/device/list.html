@@ -1,0 +1,304 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org" 
+	xmlns:xunjia="http://www.thymeleaf.org">
+
+<head>
+<div th:replace="framework/include/head::head"></div>
+</head>
+
+<body>
+	<div class="easyui-layout" fit="true">
+		<div data-options="region:'west',width:210">
+			<div id="device-org-tree" class="easyui-tree"
+				data-options="
+				url: '/org/getEnableOrgTree',
+				animate: true,
+				onClick: orgClicked
+			"></div>
+		</div>
+		<div data-options="region:'north',height:53"
+			style="padding: 10px 8px 10px 8px; overflow: hidden;">
+			<input id="device-name" class="easyui-textbox"
+				data-options="width:240,label:'装置名称：' ,labelAlign:'right',labelWidth:70" />
+			<input id="device-code" class="easyui-textbox"
+				data-options="width:240,label:'装置编码：' ,labelAlign:'right',labelWidth:70" />
+			<select id="device-enabled" class="easyui-combobox" name="enabled"
+				data-options="width:240,label:'装置状态：'">
+				<option value="-1">全部</option>
+				<option value="1">可用</option>
+				<option value="0">禁用</option>
+			</select> <a href="javascript:" onclick="searchDevices();"
+				class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+		</div>
+		<div data-options="region:'center'">
+			<table id="device-table"></table>
+			<div id="device-datagrid-toolbar" class="datagrid-toolbar">
+				<xunjia:button th:menu-id="${menuId}" perm-code="device:save" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="device:update" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="device:delete" />
+			</div>
+		</div>
+	</div>
+	<script th:inline="none">
+		var deviceTable = null;
+		$(function() {
+			deviceTable = $("#device-table").datagrid({
+				url : '/device/findDevices',
+				idField : 'id',
+				fit : true,
+				fitColumns : true,
+				striped : true,
+				loadMsg : '数据加载中，请稍候...',
+				pagination : true,
+				pageSize : 20,
+				rownumbers : true,
+				toolbar : "#device-datagrid-toolbar",
+				columns : [ [ {
+					field : 'id',
+					checkbox : true
+				}, {
+					field : 'org',
+					title : '所属组织',
+					width : 80,
+					formatter : function(value, row, index) {
+						return value == null ? "" : value.name;
+					}
+				},{
+					field : 'name',
+					title : '装置名称',
+					width : 80
+				}, {
+					field : 'code',
+					title : '装置编码',
+					width : 80
+				}, {
+					field : 'enabled',
+					title : '装置状态',
+					width : 80,
+					formatter : function(value, row, index) {
+						if (value == 1) {
+							return "可用";
+						} else {
+							return "禁用";
+						}
+					}
+				}, {
+					field : 'orderNo',
+					title : '装置排序',
+					width : 80
+				} ] ]
+			});
+		});
+
+		function orgClicked(node) {
+			$("#device-org-tree").tree('toggle', node.target);
+			deviceTable.datagrid("clearSelections");
+			searchDevices();
+		}
+
+		function searchDevices() {
+			var selectedNode = $("#device-org-tree").tree("getSelected"); 
+			var name = $("#device-name").textbox('getValue');
+			var code = $("#device-code").textbox('getValue');
+			var enabled = $("#device-enabled").combobox('getValue');
+			deviceTable.datagrid('load', {
+				'name' : name,
+				'code' : code,
+				'enabled' : enabled,
+				'orgId': selectedNode == null ? '' : selectedNode.id
+			});
+		}
+		function add() {
+			var addDialog = $("<div></div>")
+					.dialog(
+							{
+								title : '编辑数据',
+								width : 630,
+								height : 340,
+								modal : true,
+								iconCls : "fa fa-pencil-square-o",
+								href : '/device/toAdd',
+								onLoad : function() {
+									var selectedNode = $("#device-org-tree")
+											.tree("getSelected");
+									var selectedOrgId = "";
+									if (selectedNode != null) {
+										selectedOrgId = selectedNode.id;
+										var deviceParentTree = $("#device-add-parent")
+												.combotree("tree");
+										var deviceParentOrgNode = deviceParentTree
+												.tree("find", selectedNode.id);
+										if (deviceParentOrgNode != null) {
+											$("#device-add-parent")
+													.combotree('setValue',
+															selectedNode.id);
+											$("#device-add-parent").combotree(
+													'setText',
+													selectedNode.text);
+										} else {
+											deviceParentTree.tree("append", {
+												data : [ {
+													id : selectedNode.id,
+													text : selectedNode.text,
+													state : 'closed'
+												} ]
+											});
+											deviceParentOrgNode = deviceParentTree
+													.tree("find",
+															selectedNode.id);
+											$("#device-add-parent").combotree(
+													'setValue',
+													deviceParentOrgNode);
+											deviceParentTree.tree('select',
+													deviceParentOrgNode.target);
+											deviceParentOrgNode.target.style.display = 'none';
+										}
+									}
+								},
+								onClose : function() {
+									$(this).dialog('destroy');
+								},
+								buttons : [
+										{
+											text : '保存',
+											iconCls : 'fa fa-save',
+											handler : function() {
+												submitDeviceForm(
+														"add-device-form",
+														addDialog,
+														"/device/save");
+											}
+										}, {
+											text : '关闭',
+											iconCls : 'fa fa-close',
+											handler : function() {
+												addDialog.dialog('destroy');
+											}
+										} ]
+							});
+		}
+		
+		function edit(){
+			var selectedRows = deviceTable.datagrid("getSelections");
+			if (selectedRows == null || selectedRows.length == 0){
+				$.messager.alert("提示信息", "您未选择要编辑的记录。", "warning");
+			} else if (selectedRows.length > 1){
+				$.messager.alert("提示信息", "您只能选择一条记录进行操作。", "warning");
+			} else {
+				var editDialog = $("<div></div>").dialog({
+					title: '修改装置',
+					width: 630,
+					height: 340,
+					modal: true,
+					iconCls: "fa fa-pencil-square-o",
+					href: '/device/toEdit',
+					onClose : function() {
+		                $(this).dialog('destroy');
+		            },
+					onLoad: function(){
+						$.ajax({
+							url: '/device/findById',
+							data: { id: deviceTable.datagrid("getSelections")[0].id },
+							type: 'get',
+							dataType: 'json',
+							success: function(data){
+								var device = data;
+								$("#device-id").val(device.id);
+								if (device.org != null){
+									var deviceParentTree = $("#device-edit-parent").combotree("tree");
+									var deviceParentOrgNode = deviceParentTree.tree("find", device.org.id);
+									if (deviceParentOrgNode != null){
+										$("#device-edit-parent").combotree('setValue', device.org.id);	
+										$("#device-edit-parent").combotree('setText', device.org.name);	
+									} else {
+										deviceParentTree.tree("append", {
+											data: [{ id: device.org.id, text: device.org.name, state: 'closed' }]
+										});
+										deviceParentOrgNode = deviceParentTree.tree("find", device.org.id);
+										$("#device-edit-parent").combotree('setValue', deviceParentOrgNode);
+										deviceParentTree.tree('select',deviceParentOrgNode.target);
+										deviceParentOrgNode.target.style.display='none';
+									}
+								}
+								$("#device-edit-name").textbox('setValue',device.name);
+								$("#device-edit-code").textbox('setValue', device.code);
+								$("#device-edit-orderNo").textbox('setValue', device.orderNo);
+								$("#device-edit-enabled").combobox('setValue', device.enabled);
+							}
+						});	
+					},
+					buttons: [
+						{ 
+							text: '保存', 
+							iconCls: 'fa fa-save', 
+							handler: function(){
+								submitDeviceForm("edit-device-form", editDialog, "/device/update");
+							} 
+						},
+						{ 
+							text: '关闭', 
+							iconCls: 'fa fa-close', 
+							handler: function(){ 
+								editDialog.dialog('destroy'); 
+							} 
+						}
+					]
+				});
+			}
+		}
+		
+		function dataRemove(){
+			var selectedRows = deviceTable.datagrid("getSelections");
+			if (selectedRows == null || selectedRows.length == 0){
+				$.messager.alert("提示信息", "您未选择要删除的记录。", "warning");
+			} else {
+				$.messager.confirm('删除确认', '您是否确认要删除选中的记录？', function(r){
+					if (r){
+						var ids = new Array();
+						$.each(selectedRows, function(i, n){
+							ids[i] = n.id;
+						});
+						
+						$.ajax({
+							url: '/device/delete',
+							data: { "ids[]": ids },
+							type: 'post',
+							dataType: 'json',
+							success: function(data){
+								if (data.result){
+									$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+									deviceTable.datagrid("reload");
+									deviceTable.datagrid("clearSelections");
+								} else {
+									$.messager.alert("提示信息", data.msg, "error");
+								}
+							}
+						});	
+					}
+				});
+			}
+		}
+		
+		function submitDeviceForm(formId, dialog, url){
+			$("#" + formId).form('submit', {
+				url: url,
+				onSubmit: function(){
+					return $(this).form("validate");
+				},
+				success: function(data){
+					data = $.parseJSON(data);
+					if (data.result){
+						dialog.dialog("destroy");
+						$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+						deviceTable.datagrid("reload");
+						deviceTable.datagrid("clearSelections");
+					} else {
+						$.messager.alert("提示信息", data.msg, "error");
+					}
+				}
+			});
+		}
+	</script>
+</body>
+</html>

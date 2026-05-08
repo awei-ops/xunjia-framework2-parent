@@ -1,0 +1,58 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:bf="http://www.thymeleaf.org">
+	
+<div class="table-container">
+	<form id="edit-org-form" method="post">
+		<input type="hidden" id="org-id" name="id" value="0" />
+		<input type="hidden" id="org-enable" name="enable" value="0" />
+		<input type="hidden" id="org-original-code" name="originalCode" />
+		<table class="edit-table">
+			<tr>
+				<th>组织名称：</th>
+				<td>
+					<input class="easyui-textbox" id="org-name" name="name" data-options="required:true,width:240" />
+				</td>
+			</tr>
+			<tr>
+				<th>组织代码：</th>
+				<td>
+					<input class="easyui-textbox" id="org-code" name="code" data-options="required:false,width:240" />
+				</td>
+			</tr>
+			<tr>
+				<th>组织类型：</th>
+				<td>
+					<input class="easyui-combobox" id="org-type" name="type.id" data-options="
+						url: '/orgType/findAllEnableTypes',
+						textField: 'name',
+						valueField: 'id',
+						required: true,
+						editable: false,
+						width: 240
+					" />
+				</td>
+			</tr>
+			<tr>
+				<th>上级组织：</th>
+				<td>
+					<select class="easyui-combotree" id="org-parent" name="parentId" data-options="
+						width: 240,
+						url: '/org/getOrgTree',
+						textField: 'name',
+						valueField: 'id'
+					">
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<th>排序号：</th>
+				<td>
+					<input class="easyui-numberbox" id="org-orderNo" name="orderNo" data-options="required:true,min:0,precision:0,width:240" value="1" />
+				</td>
+			</tr>
+		</table>
+	</form>
+</div>
+</html>

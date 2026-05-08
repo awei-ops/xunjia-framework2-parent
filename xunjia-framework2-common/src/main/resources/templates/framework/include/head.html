@@ -1,0 +1,40 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+  	<body>
+		<div th:fragment="head">
+			<link rel="stylesheet" type="text/css" href="/global/css/global.css">
+			<link rel="stylesheet" type="text/css" th:href="@{'/global/js/super/'+ ${theme} +'.css'}">
+			<link rel="stylesheet" type="text/css" href="/global/css/font-awesome-4.7.0/css/font-awesome.min.css">
+			<link rel="icon" th:href="@{/favicon.ico}" type="image/x-icon"/>
+			<style>
+				#server-info { padding: 10px; }
+				#portal-table { width: 99%; }
+				html, body { height: 100%; }
+			</style>
+			
+			<script type="text/javascript" src="/global/js/jquery.min.js"></script>
+			<script type="text/javascript" src="/global/js/easyui/jquery.easyui.min.js"></script>
+			<script type="text/javascript" src="/global/js/easyui/locale/easyui-lang-zh_CN.js"></script>
+			<script type="text/javascript" src="/global/js/super/super.js"></script>
+			<script type="text/javascript" src="/global/js/commonUtils.js"></script>
+			<script type="text/javascript" src="/global/js/global.js"></script>
+			<script type="text/javascript" src="/global/js/watermark.js"></script>
+			<script th:inline="none">
+			/*
+				var userRealName = $("#user-real-name", parent.document).val();
+				var userPhone = $("#user-phone", parent.document).val();
+				var userId = userRealName + " " + userPhone;
+				var cout = Math.round(document.body.scrollHeight / 100);
+				watermark({watermark_txt:userId,watermark_rows:cout});
+
+				$("body").resize(function() {
+					$(".mask_div").remove();
+					cout = Math.round(document.body.scrollHeight / 100);
+					watermark({watermark_txt:userId,watermark_rows:cout});
+				});
+			*/
+			</script>
+		</div>
+	</body>
+</html>
+	

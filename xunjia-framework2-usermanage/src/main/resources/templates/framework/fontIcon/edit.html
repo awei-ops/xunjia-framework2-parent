@@ -1,0 +1,36 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:bf="http://www.thymeleaf.org">
+	
+
+<div class="table-container">
+	<form id="form1" method="post">
+		<input type="hidden" id="id" name="id" />
+		<table class="edit-table">
+			<tr>
+				<th>图标分类：</th>
+				<td>
+					<select id="typeCode" name="typeCode" class="easyui-combobox" data-options="
+						url: '/dicContent/findByTypeCode?typeCode=FONT_ICON_TYPE',
+						textField: 'name',
+						valueField: 'code',
+						editable: false,
+						required: true,
+						panelHeight: 'auto',
+						width: 240,
+						onChange: typeChanged
+					"></select>
+					<input type="hidden" id="typeName" name="typeName" />
+				</td>
+			</tr>
+			<tr>
+				<th>图标编码：</th>
+				<td>
+					<input class="easyui-textbox" id="code" name="code" data-options="required:true,width:240" />
+				</td>
+			</tr>
+		</table>
+	</form>
+</div>
+</html>

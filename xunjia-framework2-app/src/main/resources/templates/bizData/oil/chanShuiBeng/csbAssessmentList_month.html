@@ -1,0 +1,140 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" xmlns:xunjia="http://www.thymeleaf.org">
+
+<head>
+    <div th:replace="framework/include/head::head"></div>
+    <script type="text/javascript" src="/global/js/echarts/echarts.min.js"></script>
+</head>
+
+<body>
+    <div class="easyui-layout" fit="true">
+        <div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+            <span>考核时间：</span>
+            <select class="easyui-combobox" id="query-year" data-options="
+                url:'/commonControl/getYears',
+                width: 110,
+                textField: 'label',
+                valueField: 'value',
+                editable: false,
+            ">
+            </select>
+            <a>年</a>
+            <select class="easyui-combobox" id="query-month" data-options="
+                url:'/commonControl/getMonths',
+                width: 110,
+                textField: 'label',
+                valueField: 'value',
+                editable: false,
+            ">
+            </select>
+            <a>月</a>
+            <a href="javascript:" onclick="searchPageData();" class="easyui-linkbutton"
+                iconCls="fa fa-calculator">考核得分</a>
+        </div>
+        <div data-options="region:'center'">
+            <table id="display-data-table"></table>
+            <div id="user-operation-bar" class="datagrid-toolbar">
+                <xunjia:button th:menu-id="${menuId}" perm-code="dmgc_s_d_zszrsj:export" />
+            </div>
+        </div>
+    </div>
+
+    <script th:inline="none">
+        $(function () {
+            let date = new Date;
+            let year = date.getFullYear();
+            let month = date.getMonth() + 1;
+            month = (month < 10 ? "0" + month : month);
+            $('#query-year').combobox('setValue', year);
+            $('#query-month').combobox('setValue', month);
+            $("#display-data-table").datagrid({
+                url: '/dmgc_y_d_csb/getAssessment',
+                fit: true,
+                idField: 'eventId',
+                fitColumns: false,
+                striped: true,
+                loadMsg: '数据加载中，请稍候...',
+                pagination: true,
+                pageSize: 20,
+                rownumbers: true,
+                singleSelect: 'true',
+                queryParams: {
+                    cycle: '月',
+                    assessmentDate: year + "-" + month + "-01",
+                },
+                toolbar: "#user-operation-bar",
+                rowStyler: setBackGround,
+                columns: [[
+                    { "field": 'jbEventId', "checkbox": true, "width": 50 },
+                    {
+                        "field": "rq", "title": "日期", "width": 110, formatter: val => {
+                            let txt = val.substr(0, 7);
+                            return txt
+                        }
+                    },
+                    { "field": "zm", "title": "站名称", "width": 110 },
+                    { "field": "equipName", "title": "设备名称", "width": 110 },
+                    { "field": "znbh", "title": "站内编号", "width": 110 },
+                    { "field": "bxlScore", "title": "泵效率得分", "width": 110 },
+                    // { "field": "bxlWeight", "title": "泵效率权重", "width": 110 }, 
+                    { "field": "bxlWeightScore", "title": "泵效率权重得分", "width": 110 },
+                    { "field": "bxlPj", "title": "泵效率评价", "width": 110 },
+                    { "field": "jlsslScore", "title": "节流损失率得分", "width": 110 },
+                    // { "field": "jlsslWeight", "title": "节流损失率权重", "width": 110 }, 
+                    { "field": "jlsslWeightScore", "title": "节流损失率权重得分", "width": 110 },
+                    { "field": "jlsslPj", "title": "节流损失率评价", "width": 110 },
+                    { "field": "hlRateScore", "title": "回流率得分", "width": 110 },
+                    // { "field": "hlRateWeight", "title": "回流率权重" }, 
+                    { "field": "hlRateWeightScore", "title": "回流率权重得分", "width": 110 },
+                    { "field": "hlRatePj", "title": "回流率评价", "width": 110 },
+                    { "field": "fhlScore", "title": "负荷率得分", "width": 110 },
+                    // { "field": "fhlWeight", "title": "负荷率权重", "width": 110 }, 
+                    { "field": "fhlWeightScore", "title": "负荷率权重得分", "width": 110 },
+                    { "field": "fhlPj", "title": "负荷率评价", "width": 110 },
+                    { "field": "jbScore", "title": "机泵得分", "width": 110 },
+                    { "field": "jbPj", "title": "机泵评价", "width": 110 },
+                ]]
+            });
+        });
+
+        function searchPageData() {
+            let year = $('#query-year').combobox('getValue');
+            let month = $('#query-month').combobox('getValue');
+            $("#display-data-table").datagrid('load', {
+                'cycle': '月',
+                'assessmentDate': year + "-" + month + "-01",
+            });
+        }
+
+        function setBackGround(index, row) {
+            let count = 0;
+            if (row.jbPj === '不合格' || row.jbPj === '' || row.jbPj === null) {
+                count++;
+            }
+            if (row.bxlPj === '不合格' || row.bxlPj === '' || row.bxlPj === null) {
+                count++;
+            }
+            if (row.jlsslPj === '不合格' || row.jlsslPj === '' || row.jlsslPj === null) {
+                count++;
+            }
+            if (row.hlRatePj === '不合格' || row.hlRatePj === '' || row.hlRatePj === null) {
+                count++;
+            }
+            if (row.fhlPj === '不合格' || row.fhlPj === '' || row.fhlPj === null) {
+                count++;
+            }
+            if (count === 0) {
+                return 'background-color:#C1FFC1;font-weight:bold;';
+            }
+            if (count == 1) {
+                return 'background-color:#FFC0CB;font-weight:bold;';
+            }
+            if (count > 1) {
+                return 'background-color:#FF6A6A;font-weight:bold;';
+            }
+        }
+
+    </script>
+</body>
+
+</html>

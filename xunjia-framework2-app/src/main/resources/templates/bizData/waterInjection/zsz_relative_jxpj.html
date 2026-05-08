@@ -1,0 +1,147 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" xmlns:bf="http://www.thymeleaf.org">
+
+<head>
+  <div th:replace="framework/include/head::head"></div>
+</head>
+
+<body>
+  <div class="easyui-layout" fit="true">
+    <div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+      <a>选择站：</a>
+      <select class="easyui-combobox" id="query-stations" data-options="
+                url:'/dmgc_s_zsz/getAll',
+                width: 150,
+                textField: 'mc',
+                valueField: 'eventId',
+                editable: false,
+                loadFilter : function (data) {
+                  if (data) {
+                      data.splice(0, 0, {mc: '全部', eventId: ''});
+                  }
+                  return data;
+              },
+            ">
+      </select>
+      <a>统计周期：</a>
+      <input type="radio" checked="checked" name="cycle" value="月">月
+      <input type="radio" name="cycle" value="年">年
+      <select class="easyui-combobox" id="query-year" data-options="
+                url:'/commonControl/getYears',
+                width: 110,
+                textField: 'label',
+                valueField: 'value',
+                editable: false,
+            ">
+      </select>
+      <a>年</a>
+      <select class="easyui-combobox" id="query-month" data-options="
+                url:'/commonControl/getMonths',
+                width: 110,
+                textField: 'label',
+                valueField: 'value',
+                editable: false,
+            ">
+      </select>
+      <a>月</a>
+      <a href="javascript:" onclick="searchPageData();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+    </div>
+    <div data-options="region:'center'">
+      <table id="display-data-table"></table>
+    </div>
+  </div>
+
+
+  <script th:inline="none">
+    $(function () {
+      let date = new Date;
+      let year = date.getFullYear();
+      let month = date.getMonth() + 1;
+      month = (month < 10 ? "0" + month : month);
+      let queryDateString = year + "-" + month + "-01";
+      $('#query-year').combobox('setValue', year);
+      $('#query-month').combobox('setValue', month);
+      $("#display-data-table").datagrid({
+        url: '/zsz_jxpj/getRelativeJXPJ',
+        fit: true,
+        fitColumns: true,
+        striped: true,
+        loadMsg: '数据加载中，请稍候...',
+        pagination: false,
+        pageSize: 20,
+        rownumbers: true,
+        queryParams: {
+          'zid': $('#query-stations').combobox('getValue'),
+          'cycle': $('input:radio:checked').val(),
+          'queryDateString': queryDateString
+        },
+        onLoadSuccess: function () {// 合并单元格
+          computeMergeCell();
+        },
+        columns: [[
+          { "field": "stationName", "title": "站名称", "width": 100 },
+          { "field": "jx_score", "title": "得分", "width": 110 },
+          {
+            "field": "rq", "title": "统计时间",
+            "width": 110,
+            formatter: val => {
+              let txt = val.substr(0, 7);
+              if ($('input:radio:checked').val() === '月') {
+                txt = txt + "月";
+              }
+              else {
+                txt = val.substr(0, 4) + "年";
+              }
+              return txt
+            }
+          },
+        ]]
+      });
+    });
+
+    function searchPageData() {
+      let year = $('#query-year').combobox('getValue');
+      let month = $('#query-month').combobox('getValue');
+      let queryDateString = year + "-" + month + "-01";
+      $("#display-data-table").datagrid('load', {
+        'zid': $('#query-stations').combobox('getValue'),
+        'cycle': $('input:radio:checked').val(),
+        'queryDateString': queryDateString
+      });
+    }
+
+    function mergeCells(i, field, rowspan, colspan) {
+      //mergeCells合并单元格，index第几行开始，field合并的字段，rowspan合并行数，colspan合并列
+      $('#display-data-table').datagrid('mergeCells', {
+        index: i,
+        field: field,
+        rowspan: rowspan,
+        colspan: colspan
+      });
+    }
+
+    function computeMergeCell() {
+      let rows = $('#display-data-table').datagrid("getRows");//获取行的数据
+      let columns = $('#display-data-table').datagrid("options").columns;
+      for (let k = 0; k < columns[0].length; k++) {
+        if (columns[0][k].field === 'stationName') {
+          for (let i = 0; i < rows.length; i++) {
+            let rowspan = 0;
+            for (let j = i; j < rows.length; j++) {
+              if (rows[i].stationName == rows[j].stationName) {//计算合并多少行
+                rowspan++;
+              }
+            }
+            if (rowspan > 1) {
+              mergeCells(i, 'stationName', rowspan, 1);
+              i = i + rowspan - 1;
+            }
+          }
+        }
+      }
+    }
+
+  </script>
+</body>
+
+</html>

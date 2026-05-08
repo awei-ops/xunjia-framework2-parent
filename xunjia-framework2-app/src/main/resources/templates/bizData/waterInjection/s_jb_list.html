@@ -1,0 +1,98 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" xmlns:xunjia="http://www.thymeleaf.org">
+
+<head>
+	<div th:replace="framework/include/head::head"></div>
+	<script type="text/javascript" src="/global/js/ten-factory-formatter.js"></script>
+</head>
+
+<body>
+	<div class="easyui-layout" fit="true">
+		<div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+			<a>所属站：</a>
+			<select class="easyui-combobox" id="query-stations" data-options="
+                url:'/dmgc_s_zsz/getAll',
+                width: 150,
+                textField: 'mc',
+                valueField: 'eventId',
+                editable: true,
+                loadFilter : function (data) {
+                  if (data) {
+                      data.splice(0, 0, {mc: '全部', eventId: ''});
+                  }
+                  return data;
+              },
+            ">
+			</select>
+			<input id="query-bh-key" class="easyui-textbox"
+				data-options="width:240,label:'站内编号：' ,labelAlign:'right',labelWidth:90" />
+			<a href="javascript:" onclick="searchPageData();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+		</div>
+		<div data-options="region:'center'">
+			<table id="display-data-table"></table>
+		</div>
+	</div>
+
+	<script th:inline="none">
+		$(function () {
+			$("#display-data-table").datagrid({
+				url: '/dmgc_s_jb/getPageData',
+				fit: true,
+				fitColumns: false,
+				striped: true,
+				loadMsg: '数据加载中，请稍候...',
+				pagination: true,
+				pageSize: 20,
+				rownumbers: true,
+				columns: [[
+					{ "field": "sszkCode", "title": "所属站类型", "width": 110 },
+					{ "field": "sszkmc", "title": "所属站名", "width": 110 },
+					{ "field": "mc", "title": "名称", "width": 110 },
+					{ "field": "bh", "title": "站内编号", "width": 110 },
+					{ "field": "blx", "title": "泵类型", "width": 110, formatter: blxFormatter },
+					{ "field": "bxh", "title": "泵型号", "width": 110 },
+					{ "field": "scrq", "title": "生产日期", "width": 110 },
+					{ "field": "tcrq", "title": "投用日期", "width": 110 },
+					{ "field": "sccj", "title": "生产厂家", "width": 110 },
+					{ "field": "edyc", "title": "额定扬程（m)", "width": 110 },
+					{ "field": "edll", "title": "额定流量（m³/h)", "width": 110 },
+					{ "field": "djgl", "title": "电机功率（kw)", "width": 110 },
+					{ "field": "djxh", "title": "电机型号", "width": 110 },
+					{ "field": "djsccj", "title": "电机生产厂家", "width": 110 },
+					{ "field": "djeddl", "title": "电机额定电流（A)", "width": 110 },
+					{ "field": "djglys", "title": "电机功率因数", "width": 110 },
+					{ "field": "djxl", "title": "电机效率（%）", "width": 110 },
+					{ "field": "djbpqbh", "title": "电机变频器型号", "width": 110 },
+					{ "field": "edzs", "title": "额定转速（r/min)", "width": 110 },
+					{ "field": "edgzyl", "title": "额定工作压力（Mpa)", "width": 120 },
+					{ "field": "gzjz", "title": "工作介质", "width": 110 },
+					{ "field": "zyjscs", "title": "主要技术参数", "width": 110 },
+					{ "field": "lqfs", "title": "冷却方式", "width": 110 },
+					{ "field": "rhfs", "title": "润滑方式", "width": 110 },
+					// { "field": "sfbf", "title": "是否报废", "width": 110 },
+					{ "field": "bfrq", "title": "报废日期", "width": 110 },
+					{ "field": "ghrq", "title": "更换日期", "width": 110 },
+					// { "field": "zch", "title": "资产号", "width": 110 },
+					// { "field": "bz", "title": "备注", "width": 110 },
+					// { "field": "fj", "title": "附件", "width": 110 },
+					// { "field": "sszkbmc", "title": "所属站库表名称", "width": 110 },
+					// { "field": "cEventId", "title": "更换前eventId", "width": 110 },
+					// { "field": "uId", "title": "数据湖唯一标识", "width": 110 },
+					// { "field": "sszkid", "title": "所属站库id", "width": 110 },
+					// { "field": "ssdwdm", "title": "所属单位代码", "width": 110 }
+				]]
+			});
+		});
+
+		function searchPageData() {
+			$("#display-data-table").datagrid('load', {
+				'sszkmc': $('#query-stations').combobox('getText') === '全部' ? '' : $('#query-stations').combobox('getText'),
+				'bh': $("#query-bh-key").textbox('getValue'),
+			});
+		}
+
+
+	</script>
+</body>
+
+</html>

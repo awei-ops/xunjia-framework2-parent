@@ -1,0 +1,47 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org" xmlns:bf="http://www.thymeleaf.org">
+<div class="table-container">
+	<form id="add-device-form" method="post" enctype="multipart/form-data">
+		<table class="edit-table">
+			<tr>
+				<th>装置名称：</th>
+				
+				<td><input class="easyui-textbox" id="device-add-name" name="name"
+					data-options="required:true,width:240" /></td>
+			</tr>
+			<tr>
+				<th>装置编码：</th>
+				<td><input class="easyui-textbox" id="device-add-code" name="code"
+					data-options="required:true,width:240" /></td>
+			</tr>
+			<tr>
+				<th>所属组织：</th>
+				<td><select class="easyui-combotree" id="device-add-parent"
+					name="parentId"
+					data-options="
+						required: true,
+						width: 240,
+						url: '/org/getEnableOrgTree',
+						textField: 'name',
+						valueField: 'id'
+					">
+				</select></td>
+			</tr>
+			<tr>
+				<th>装置排序：</th>
+				<td><input class="easyui-numberbox" id="device-add-orderNo"
+					name="orderNo" data-options="required:true,width:240" /></td>
+			</tr>
+			<tr>
+				<th>装置状态：</th>
+				<td><select id="device-enabled" class="easyui-add-combobox"
+					name="enabled" data-options="width:240">
+						<option value="1">可用</option>
+						<option value="0">禁用</option>
+				</select></td>
+			</tr>
+		</table>
+	</form>
+</div>
+</html>

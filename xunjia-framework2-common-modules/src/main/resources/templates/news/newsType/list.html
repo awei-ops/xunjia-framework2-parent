@@ -1,0 +1,243 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	  xmlns:th="http://www.thymeleaf.org"
+	  xmlns:xunjia="http://www.thymeleaf.org">
+	
+<head>
+	<div th:replace="framework/include/head::head"></div>
+</head>
+	
+<body>
+	<div class="easyui-layout" fit="true">
+		<div data-options="region:'west',width:210">
+			<div id="type-tree" class="easyui-tree" data-options="
+				url: '/newsType/getTypeTree',
+				animate: true,
+				onClick: typeClicked
+			"></div>
+		</div>
+		<div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+			<input id="news-type-name-key" class="easyui-textbox" data-options="width:240,label:'栏目名称：' ,labelAlign:'right',labelWidth:80" />
+			<a href="javascript:" onclick="searchNewsType();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+		</div>
+		<div data-options="region:'center'">
+			<table id="type-table"></table>
+			<div id="typeDgTools" class="datagrid-toolbar">
+				<xunjia:button th:menu-id="${menuId}" perm-code="newsType:save" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="newsType:update" />
+				<xunjia:button th:menu-id="${menuId}" perm-code="newsType:delete" />
+			</div>
+		</div>
+	</div>
+
+	
+	<script th:inline="none">
+	$(function(){
+		$("#type-table").datagrid({
+			url: '/newsType/findNewsTypes',
+			idField: 'id',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: true,                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+			pageSize: 20,
+			rownumbers: true,
+			toolbar: "#typeDgTools",
+			columns: [[
+				{
+					field: 'id',
+					checkbox: true
+				},
+				{                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
+					field: 'name',
+					title: '栏目名称',
+					width: 80
+				}, {
+					field: 'orderNo',
+					title: '排序号',
+					width: 80
+				}
+			]]
+		});
+	});
+	
+	function add(){
+		var addDialog = $("<div></div>").dialog({
+			title: '编辑数据',
+			width: 630,
+			height: 260,
+			modal: true,
+			iconCls: "fa fa-pencil-square-o",
+			href: '/newsType/toAdd',
+			onLoad: function(){
+				var selectedNode = $("#type-tree").tree("getSelected"); 
+				if (selectedNode!= null){
+					var parentTree = $("#type-parent").combotree("tree");
+					var typeNode = parentTree.tree("find", selectedNode.id);
+					if (typeNode != null){
+						$("#type-parent").combotree('setValue', typeNode.id);
+					} else {
+						parentTree.tree("append", {
+							data: [{ id: selectedNode.id, text: selectedNode.text, state: 'closed' }]
+						});
+						typeNode = parentTree.tree("find", selectedNode.id);
+						$("#type-parent").combotree('setValue', typeNode);
+						parentTree.tree('select',typeNode.target);
+						typeNode.target.style.display='none';
+					}
+				}
+			},
+			onClose : function() {
+                $(this).dialog('destroy');
+            },
+			buttons: [
+				{ 
+					text: '保存',
+					iconCls: 'fa fa-save', 
+					handler: function(){
+						submitForm("add-form", addDialog, "/newsType/save");
+					} 
+				},
+				{ 
+					text: '关闭', 
+					iconCls: 'fa fa-close', 
+					handler: function() { 
+						addDialog.dialog('destroy'); 
+					}
+				}
+			]
+		});
+	}
+	
+	function edit(){
+		var selectedRows = $("#type-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要编辑的记录。", "warning");
+		} else if (selectedRows.length > 1){
+			$.messager.alert("提示信息", "您只能选择一条记录进行操作。", "warning");
+		} else {
+			var editDialog = $("<div></div>").dialog({
+				title: '编辑数据',
+				width: 630,
+				height: 260,
+				modal: true,
+				iconCls: "fa fa-pencil-square-o",
+				href: '/newsType/toEdit',
+				onClose : function() {
+	                $(this).dialog('destroy');
+	            },
+				onLoad: function(){
+					$.ajax({
+						url: '/newsType/findById',
+						data: { id: selectedRows[0].id },
+						type: 'get',
+						dataType: 'json',
+						success: function(data){
+							$("#type-id").val(data.id);
+							if (data.parent != null){
+								$("#type-parent").combotree('setValue', data.parent.id);
+								$("#type-parent").combotree('setText', data.parent.name);
+							}
+							$("#type-name").textbox('setValue', data.name);
+							$("#type-orderNo").numberbox('setValue', data.orderNo);
+						}
+					});	
+				},
+				buttons: [
+					{ 
+						text: '保存', 
+						iconCls: 'fa fa-save', 
+						handler: function(){
+							submitForm("edit-form", editDialog, "/newsType/update");
+						} 
+					},
+					{ 
+						text: '关闭', 
+						iconCls: 'fa fa-close', 
+						handler: function(){ 
+							editDialog.dialog('destroy'); 
+						} 
+					}
+				]
+			});
+		}
+	}
+	
+	function dataRemove(){
+		var selectedRows = $("#type-table").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要删除的记录。", "warning");
+		} else {
+			$.messager.confirm('删除确认', '您是否确认要删除选中的记录？', function(r){
+				if (r){
+					var ids = new Array();
+					$.each(selectedRows, function(i, n){
+						ids[i] = n.id;
+					});
+					
+					$.ajax({
+						url: '/newsType/delete',
+						data: { "ids[]": ids },
+						type: 'post',
+						dataType: 'json',
+						success: function(data){
+							if (data.result){
+								$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+								$("#type-table").datagrid("reload");
+								$("#type-table").datagrid("clearSelections");
+								$("#type-tree").tree("reload");
+							} else {
+								$.messager.alert("提示信息", data.msg, "error");
+							}
+						}
+					});	
+				}
+			});
+		}
+	}
+	
+	function submitForm(formId, dialog, url){
+		$("#" + formId).form('submit', {
+			url: url,
+			onSubmit: function(){
+				return $(this).form("validate");
+			},
+			success: function(data){
+				data = $.parseJSON(data);
+				if (data.result){
+					var parentTypeId = $("#type-parent").combotree('getValue');
+					if (parentTypeId != ""){
+						var parentTypeNode = $("#type-tree").tree('find', parentTypeId);
+						$("#type-tree").tree("reload", parentTypeNode.target);
+					} else {
+						$("#type-tree").tree("reload");
+					}
+					
+					dialog.dialog("destroy");
+					$.messager.show({ title:'提示信息', msg: data.msg, timeout:5000, showType: 'show' });
+					$("#type-table").datagrid("reload");
+					$("#type-table").datagrid("clearSelections");
+				} else {
+					$.messager.alert("提示信息", data.msg, "error");
+				}
+			}
+		});
+	}
+	
+	function typeClicked(node){
+		$("#type-tree").tree("toggle", node.target);
+		$("#type-table").datagrid("clearSelections");
+		searchNewsType();
+	}
+	
+	function searchNewsType(){
+		var selectedNode = $("#type-tree").tree("getSelected"); 
+		$("#type-table").datagrid('load', {
+			'name': $("#news-type-name-key").textbox('getValue'),
+			'parentId': selectedNode == null ? '' : selectedNode.id
+		});
+	}
+	</script>
+</body>
+</html>

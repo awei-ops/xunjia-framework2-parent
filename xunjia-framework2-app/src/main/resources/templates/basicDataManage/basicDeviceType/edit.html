@@ -1,0 +1,27 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:bf="http://www.thymeleaf.org">
+	
+<div class="table-container">
+	<form id="edit-form" method="post">
+		<input type="hidden" id="indicator-id" name="id" value="0" />
+		<input type="hidden" id="device-category" name="deviceCategory" />
+		<input type="hidden" id="indicator-original-code" name="originalCode" />
+		<table class="edit-table">
+			<tr>
+				<th>名称：</th>
+				<td>
+					<input class="easyui-textbox" id="device-type-name" name="deviceTypeName" data-options="required:true,width:240" />
+				</td>
+			</tr>
+			<tr>
+				<th>编码：</th>
+				<td>
+					<input class="easyui-textbox" id="device-type-code" name="deviceTypeCode" data-options="required:true,width:240" />
+				</td>
+			</tr>
+		</table>
+	</form>
+</div>
+</html>

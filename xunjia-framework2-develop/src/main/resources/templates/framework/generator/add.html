@@ -1,0 +1,477 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:bf="http://www.thymeleaf.org">
+	
+<body>
+	<script type="text/javascript" src="/global/js/icheck-1.x/icheck.min.js"></script>
+	<link type="text/css" rel="stylesheet" href="/global/js/icheck-1.x/skins/square/red.css" />
+	<style>
+		.prop-table { 
+			width: 100%; 
+			border: 1px solid #dddddd;
+			border-collapse: collapse;
+			font-size: 13px; 
+			margin-top: 10px;
+		}
+		.prop-table th {
+			background-color: #f4f4f4;
+			font-weight: bold;
+			height: 34px;
+			text-align: center;
+		}
+		.prop-table td {
+			background-color: #ffffff;
+			border: 1px solid #dddddd;
+			height: 34px;
+			padding: 5px;
+			text-align: center;
+		}
+		.prop-title {
+			width: 100%;
+			border: 1px solid #dddddd;
+			margin-top: 10px;
+		}
+		.prop-title-name {
+			text-align: left;
+			padding-left: 10px; 
+		}
+		.prop-table-btn {
+			text-align: right;
+			padding-right: 10px;
+		}
+	</style>
+	
+	<div class="table-container">
+		<form id="add-custom-entity-form" method="post">
+			<table class="edit-table">
+				<tr>
+					<td colspan="4" style="padding-left: 10px;">实体类信息</td>
+				</tr>
+				<tr>
+					<th>包名：</th>
+					<td>
+						<input class="easyui-textbox" id="custom-entity-package-name" name="packageName" data-options="required:true,width:300" />
+					</td>
+					<th>实体类名：</th>
+					<td>
+						<input class="easyui-textbox" id="custom-entity-entity-name" name="entityName" data-options="required:true,width:300" />
+					</td>
+				</tr>
+				<tr>
+					<th>映射表名：</th>
+					<td>
+						<input class="easyui-textbox" id="custom-entity-table-name" name="tableName" data-options="required:true,width:300" />
+					</td>
+					<th>描述：</th>
+					<td>
+						<input class="easyui-textbox" id="custom-entity-entity-descr" name="entityDescr" data-options="required:true,width:300" />
+					</td>
+				</tr>
+				<tr>
+					<th>树结构：</th>
+					<td>
+						<select id="custom-entity-tree-structure" name="treeStructure" class="easyui-combobox"
+								data-options="width:300,editable:false,panelHeight:'auto',onChange:treeStructureChanged">
+							<option value="1">树形结构</option>
+							<option value="0" selected>非树形结构</option>
+						</select>
+					</td>
+					<th>操作：</th>
+					<td>
+						<select class="easyui-combobox" id="custom-entity-operations" name="operations"
+							data-options="
+								url: '/dicContent/findByTypeCode?typeCode=BUSINESS_OPERATION',
+								editable: false,
+								width:300,
+								textField: 'name',
+								valueField: 'name',
+								multiple: true,
+								onChange: operationChanged
+							"
+						></select>
+					</td>
+				</tr>
+				<tr>
+					<th>功能描述：</th>
+					<td colspan="3">
+						<input class="easyui-textbox" id="instruction" name="instruction"
+							   data-options="multiline:true,width:700,height:80" />
+					</td>
+				</tr>
+			</table>
+			
+			<table class="prop-table" id="prop-table">
+				<tr>
+					<td colspan="10" style="border:0;text-align:left;padding-left:10px;">属性信息</td>
+					<td colspan="10" style="border:0;text-align:right;padding-right:10px;">
+						<a class="easyui-linkbutton info" href="javascript:" onclick="addProp();">增加属性</a>
+					</td>
+				</tr>
+				<tr>
+					<th>属性名称</th>
+					<th>类型</th>
+					<th>映射列名</th>
+					<th>描述</th>
+					<th style="width:50px;">主键</th>
+					<th style="width:60px;">启用标识</th>
+					<th style="width:65px;">树节点名称</th>
+					<th style="width:50px;">唯一</th>
+					<th style="width:50px;">必需</th>
+					<th style="width:50px;">可查询</th>
+					<th style="width:60px;">列表显示</th>
+					<th style="width:65px;">查询条件</th>
+					<th style="width:65px;">控件</th>
+					<th style="width:60px;">读取字典</th>
+					<th>字典分类编码</th>
+					<th>获取方式</th>
+					<th>被映射属性</th>
+					<th>查询排序</th>
+					<th>显示顺序</th>
+					<th style="width:50px;">操作</th>
+				</tr>
+				<tr id="props-0">
+					<td><input class="easyui-textbox" name="properties[0].propName" data-options="required:true" value="id" readonly /></td>
+					<td><input class="easyui-textbox" name="properties[0].type" value="String" readonly /></td>
+					<td><input class="easyui-textbox" name="properties[0].columnName" value="id" readonly /></td>
+					<td><input class="easyui-textbox" name="properties[0].propDescr" value="主键" data-options="required:true,width:100" /></td>
+					<td><input type="radio" name="properties[0].pkFlag" value="1" checked /></td>
+					<td style="width:60px;"><input type="hidden" name="properties[0].enableFlag" value="0" /></td>
+					<td><input type="hidden" name="properties[0].treeNodeFlag" value="0" /></td>
+					<td><input type="radio" name="properties[0].uniqueFlag" value="1" checked /></td>
+					<td><input type="hidden" name="properties[0].requiredFlag" value="1" /></td>
+					<td><input type="hidden" name="properties[0].searchFlag" value="0" /></td>
+					<td><input type="hidden" name="properties[0].tableColumnFlag" value="0" /></td>
+					<td><input type="hidden" name="properties[0].searchCond" value="" /></td>
+					<td><input type="hidden" name="properties[0].controlType" value="" /></td>
+					<td><input type="hidden" name="properties[0].dicFlag" value="0" /></td>
+					<td><input type="hidden" name="properties[0].dicTypeCode" value="" /></td>
+					<td><input type="hidden" name="properties[0].fetchType" value="" /></td>
+					<td><input type="hidden" name="properties[0].mappedProp" value="" /></td>
+					<td><input type="hidden" name="properties[0].orderBy" value="" /></td>
+					<td><input class="easyui-numberbox" name="properties[0].orderNo" data-options="value:1,min:1,precision:0,width:50" /></td>
+					<td></td>
+				</tr>
+				<tr id="props-1">
+					<td><input class="easyui-textbox" name="properties[1].propName" data-options="required:true" /></td>
+					<td><input class="easyui-combobox" name="properties[1].type" data-options="url:'/customEntity/findDataTypes',editable:false,required:true,textField:'name',valueField:'value'" /></td>
+					<td><input class="easyui-textbox" name="properties[1].columnName" /></td>
+					<td><input class="easyui-textbox" name="properties[1].propDescr" data-options="required:true,width:100" /></td>
+					<td><input type="hidden" name="properties[1].pkFlag" value="0" /></td>
+					<td><input type="hidden" name="properties[1].enableFlag" value="0" /></td>
+					<td><input type="hidden" name="properties[1].treeNodeFlag" value="0" /></td>
+					<td><input type="checkbox" name="properties[1].uniqueFlag" value="1" /></td>
+					<td><input type="checkbox" name="properties[1].requiredFlag" value="1" /></td>
+					<td><input type="checkbox" name="properties[1].searchFlag" value="1" /></td>
+					<td><input type="checkbox" name="properties[1].tableColumnFlag" value="1" /></td>
+					<td><input class="easyui-combobox" name="properties[1].searchCond" data-options="url:'/dicContent/findByTypeCode?typeCode=SEARCH_CONDITION',editable:false,textField:'name',valueField:'name',width:100" /></td>
+					<td><input class="easyui-combobox" name="properties[1].controlType" data-options="url:'/dicContent/findByTypeCode?typeCode=CONTROL_TYPE',editable:false,required:true,textField:'name',valueField:'name',width:100" /></td>
+					<td><input type="checkbox" id="dicFlag-1" name="properties[1].dicFlag" value="1" /></td>
+					<td><input class="easyui-textbox" id="dicTypeCode-1" name="properties[1].dicTypeCode" data-options="width:100" disabled /></td>
+					<td>
+						<select class="easyui-combobox" name="properties[1].fetchType" data-options="width:60,panelHeight:'auto',editable:false">
+							<option value="" selected>选择</option>
+							<option value="EAGER">EAGER</option>
+							<option value="LAZY">LAZY</option>
+						</select>
+					</td>
+					<td><input class="easyui-textbox" name="properties[1].mappedProp" data-options="width:100" /></td>
+					<td>
+						<select class="easyui-combobox" name="properties[1].orderBy" data-options="width:60,editable:false,panelHeight:'auto'">
+							<option value="" selected>选择</option>
+							<option value="ASC">ASC</option>
+							<option value="DESC">DESC</option>
+						</select>
+					</td>
+					<td><input class="easyui-numberbox" name="properties[1].orderNo" data-options="value:2,min:1,precision:0,width:50" /></td>
+					<td><a class="easyui-linkbutton error" href="javascript:" onclick="removeProp(1);">×</a></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	
+	<script>
+		$(function(){
+			initControllers();
+		});
+		
+		function initControllers(){
+			$("#prop-table").find(":radio").iCheck({
+			    radioClass: 'iradio_square-red',
+			    increaseArea: '20%'
+			});
+			$("#prop-table").find(":checkbox").iCheck({
+				checkboxClass: 'icheckbox_square-red',
+			    increaseArea: '20%'
+			});
+			
+			$("[name$='dicFlag']").on('ifChanged', function(event){
+				var id = event.target.id;
+				var index = id.split("-")[1];
+				var checked = event.target.checked;
+				if (checked){
+					$("#dicTypeCode-" + index).textbox("enable");
+				} else {
+					$("#dicTypeCode-" + index).textbox("disable");
+				}
+			});
+			
+			$("[name$='treeNodeFlag']").on('ifChanged', function(event){
+				var checked = event.target.checked;
+				var enableCheckboxs = $("[name$='treeNodeFlag']");
+				if (checked){
+					$.each(enableCheckboxs, function(i, n){
+						if(n.type == 'checkbox' && n.name != event.target.name){
+							$(n).iCheck('uncheck');
+						}
+					});
+				}
+			});
+			
+			$("[name$='enableFlag']").on('ifChanged', function(event){
+				var checked = event.target.checked;
+				var enableCheckboxs = $("[name$='enableFlag']");
+				if (checked){
+					$.each(enableCheckboxs, function(i, n){
+						if(n.type == 'checkbox' && n.name != event.target.name){
+							$(n).iCheck('uncheck');
+						}
+					});
+				}
+			});
+		}
+		
+		var rowIndex = 2;
+		function addProp(){
+			var rowCode = "<tr id=\"props-"+ rowIndex +"\">"
+					+ "<td><input class=\"easyui-textbox\" name=\"properties["+ rowIndex +"].propName\" data-options=\"required:true\" /></td>"
+					+ "<td><input class=\"easyui-combobox\" name=\"properties["+ rowIndex +"].type\" data-options=\"url:'/customEntity/findDataTypes',editable:false,required:true,textField:'name',valueField:'value'\" /></td>"
+					+ "<td><input class=\"easyui-textbox\" name=\"properties["+ rowIndex +"].columnName\" /></td>"
+					+ "<td><input class=\"easyui-textbox\" name=\"properties["+ rowIndex +"].propDescr\" data-options=\"required:true,width:100\" /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].pkFlag\" value=\"0\" /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].enableFlag\" value=\"0\" /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].treeNodeFlag\" value=\"0\" /></td>"
+					+ "<td><input type=\"checkbox\" name=\"properties["+ rowIndex +"].uniqueFlag\" value=\"1\" /></td>"
+					+ "<td><input type=\"checkbox\" name=\"properties["+ rowIndex +"].requiredFlag\" value=\"1\" /></td>"
+					+ "<td><input type=\"checkbox\" name=\"properties["+ rowIndex +"].searchFlag\" value=\"1\" /></td>"
+					+ "<td><input type=\"checkbox\" name=\"properties["+ rowIndex +"].tableColumnFlag\" value=\"1\" checked /></td>"
+					+ "<td><input class=\"easyui-combobox\" name=\"properties["+ rowIndex +"].searchCond\" data-options=\"url:'/dicContent/findByTypeCode?typeCode=SEARCH_CONDITION',editable:false,textField:'name',valueField:'name',width:100 \" /></td>"
+					+ "<td><input class=\"easyui-combobox\" name=\"properties["+ rowIndex +"].controlType\" data-options=\"url:'/dicContent/findByTypeCode?typeCode=CONTROL_TYPE',editable:false,required:true,textField:'name',valueField:'name',width:100 \" /></td>"
+					+ "<td><input type=\"checkbox\" id=\"dicFlag-"+ rowIndex +"\" name=\"properties["+ rowIndex +"].dicFlag\" value=\"1\" /></td>"
+					+ "<td><input class=\"easyui-textbox\" id=\"dicTypeCode-"+ rowIndex +"\" name=\"properties["+ rowIndex +"].dicTypeCode\" data-options=\"width:100\" disabled /></td>"
+					+ "<td>"
+					+ "    <select class=\"easyui-combobox\" name=\"properties["+ rowIndex +"].fetchType\" data-options=\"width:60,panelHeight:'auto',editable:false\" >"
+					+ "        <option value='' selected>选择</option>"
+					+ "        <option value='EAGER'>EAGER</option>"
+					+ "        <option value='LAZY'>LAZY</option>"
+					+ "    </select>"
+					+ "</td>"
+					+ "<td><input class=\"easyui-textbox\" name=\"properties["+ rowIndex +"].mappedProp\" data-options=\"width:100\" /></td>"
+					+ "<td>"
+					+ "    <select class=\"easyui-combobox\" name=\"properties["+ rowIndex +"].orderBy\" data-options=\"width:60,editable:false,panelHeight:'auto'\">"
+					+ "        <option value=\"\" selected>选择</option>"
+					+ "        <option value=\"ASC\">ASC</option>"
+					+ "        <option value=\"DESC\">DESC</option>"
+					+ "    </select>"
+					+ "</td>"
+					+ "<td><input class=\"easyui-numberbox\" name=\"properties["+ rowIndex +"].orderNo\" data-options=\"value:"+ (rowIndex + 1) +",min:1,precision:0,width:50\" /></td>"
+					+ "<td><a class=\"easyui-linkbutton error\" href=\"javascript:\" onclick=\"removeProp("+ rowIndex +");\">×</a></td>"
+					+ "</tr>";
+			$("#prop-table").append(rowCode);
+			$.parser.parse('#props-' + rowIndex);
+			initControllers();
+			rowIndex++;
+		}
+
+		function addNameProp(){
+			var rowCode = "<tr id=\"props-name\">"
+					+ "<td><input class=\"easyui-textbox\" name=\"properties["+ rowIndex +"].propName\" data-options=\"editable:false\" value=\"name\" /></td>"
+					+ "<td><input class=\"easyui-textbox\" name=\"properties["+ rowIndex +"].type\" data-options=\"editable:false\" value=\"String\" /></td>"
+					+ "<td><input class=\"easyui-textbox\" name=\"properties["+ rowIndex +"].columnName\" data-options=\"\" value=\"name\" /></td>"
+					+ "<td><input class=\"easyui-textbox\" name=\"properties["+ rowIndex +"].propDescr\" data-options=\"required:true,width:100\" value=\"名称\" /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].pkFlag\" value=\"0\" /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].enableFlag\" value=\"0\" /></td>"
+					+ "<td><input type=\"radio\" name=\"properties["+ rowIndex +"].treeNodeFlag\" value=\"1\" checked /></td>"
+					+ "<td><input type=\"checkbox\" name=\"properties["+ rowIndex +"].uniqueFlag\" value=\"1\" /></td>"
+					+ "<td><input type=\"checkbox\" name=\"properties["+ rowIndex +"].requiredFlag\" value=\"1\" checked /></td>"
+					+ "<td><input type=\"checkbox\" name=\"properties["+ rowIndex +"].searchFlag\" value=\"1\" /></td>"
+					+ "<td><input type=\"checkbox\" name=\"properties["+ rowIndex +"].tableColumnFlag\" value=\"1\" checked /></td>"
+					+ "<td><input class=\"easyui-combobox\" name=\"properties["+ rowIndex +"].searchCond\" data-options=\"url:'/dicContent/findByTypeCode?typeCode=SEARCH_CONDITION',editable:false,textField:'name',valueField:'name',width:100 \" /></td>"
+					+ "<td><input class=\"easyui-combobox\" name=\"properties["+ rowIndex +"].controlType\" data-options=\"url:'/dicContent/findByTypeCode?typeCode=CONTROL_TYPE',editable:false,required:true,textField:'name',valueField:'name',width:100 \" value=\"文本\" /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].dicFlag\" value=\"0\" /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].dicTypeCode\" value=\"\" /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].fetchType\" value=\"\"  /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].mappedProp\" value=\"\" /></td>"
+					+ "<td>"
+					+ "    <select class=\"easyui-combobox\" name=\"properties["+ rowIndex +"].orderBy\" data-options=\"width:60,editable:false,panelHeight:'auto'\">"
+					+ "        <option value=\"\" selected>选择</option>"
+					+ "        <option value=\"ASC\">ASC</option>"
+					+ "        <option value=\"DESC\">DESC</option>"
+					+ "    </select>"
+					+ "</td>"
+					+ "<td><input class=\"easyui-numberbox\" name=\"properties["+ rowIndex +"].orderNo\" data-options=\"value:"+ (rowIndex + 1) +",min:1,precision:0,width:50\" /></td>"
+					+ "<td></td>"
+					+ "</tr>";
+			$("#prop-table").append(rowCode);
+			$.parser.parse('#props-name');
+			initControllers();
+			rowIndex++;
+		}
+		
+		function addParentProp(){
+			var rowCode = "<tr id=\"props-parent\">"
+					+ "<td><input class=\"easyui-textbox\" name=\"properties["+ rowIndex +"].propName\" data-options=\"editable:false\" value=\"parent\" /></td>"
+					+ "<td><input class=\"easyui-textbox\" name=\"properties["+ rowIndex +"].type\" data-options=\"editable:false\" value=\"当前类型\" /></td>"
+					+ "<td><input class=\"easyui-textbox\" name=\"properties["+ rowIndex +"].columnName\" data-options=\"editable:false\" value=\"parentId\" /></td>"
+					+ "<td><input class=\"easyui-textbox\" name=\"properties["+ rowIndex +"].propDescr\" data-options=\"editable:false,width:100\" value=\"上级\" /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].pkFlag\" value=\"0\" /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].enableFlag\" value=\"0\" /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].treeNodeFlag\" value=\"0\" /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].uniqueFlag\" value=\"0\" /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].requiredFlag\" value=\"0\" /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].searchFlag\" value=\"0\" /></td>"
+					+ "<td><input type=\"checkbox\" name=\"properties["+ rowIndex +"].tableColumnFlag\" value=\"1\" checked /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].searchCond\" value=\"0\" /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].controlType\" value=\"下拉树\" /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].dicFlag\" value=\"0\" /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].dicTypeCode\" value=\"0\" /></td>"
+					+ "<td>"
+					+ "    <select class=\"easyui-combobox\" name=\"properties["+ rowIndex +"].fetchType\" data-options=\"width:60,panelHeight:'auto',editable:false\" >"
+					+ "        <option value='' selected>选择</option>"
+					+ "        <option value='EAGER'>EAGER</option>"
+					+ "        <option value='LAZY'>LAZY</option>"
+					+ "    </select>"
+					+ "</td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].mappedProp\" value=\"\" /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].orderBy\" value=\"\" /></td>"
+					+ "<td><input class=\"easyui-numberbox\" name=\"properties["+ rowIndex +"].orderNo\" data-options=\"value:"+ (rowIndex + 1) +",min:1,precision:0,width:50\" /></td>"
+					+ "<td></td>"
+					+ "</tr>";
+			$("#prop-table").append(rowCode);
+			$.parser.parse('#props-parent');
+			initControllers();
+			rowIndex++;
+		}
+
+		function addEnableStateProp(){
+			var rowCode = "<tr id=\"props-enable-state\">"
+					+ "<td><input class=\"easyui-textbox\" name=\"properties["+ rowIndex +"].propName\" data-options=\"editable:false\" value=\"enableState\" /></td>"
+					+ "<td><input class=\"easyui-textbox\" name=\"properties["+ rowIndex +"].type\" data-options=\"editable:false\" value=\"Integer\" /></td>"
+					+ "<td><input class=\"easyui-textbox\" name=\"properties["+ rowIndex +"].columnName\" data-options=\"\" value=\"enableState\" /></td>"
+					+ "<td><input class=\"easyui-textbox\" name=\"properties["+ rowIndex +"].propDescr\" data-options=\"editable:false,width:100\" value=\"可用状态\" /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].pkFlag\" value=\"0\" /></td>"
+					+ "<td><input type=\"radio\" name=\"properties["+ rowIndex +"].enableFlag\" value=\"1\" checked /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].treeNodeFlag\" value=\"0\" /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].uniqueFlag\" value=\"0\" /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].requiredFlag\" value=\"0\" /></td>"
+					+ "<td><input type=\"checkbox\" name=\"properties["+ rowIndex +"].searchFlag\" value=\"1\" /></td>"
+					+ "<td><input type=\"checkbox\" name=\"properties["+ rowIndex +"].tableColumnFlag\" value=\"1\" checked /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].searchCond\" value=\"0\" /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].controlType\" value=\"隐藏域\" /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].dicFlag\" value=\"0\" /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].dicTypeCode\" value=\"0\" /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].fetchType\" value=\"\" /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].mappedProp\" value=\"\" /></td>"
+					+ "<td><input type=\"hidden\" name=\"properties["+ rowIndex +"].orderBy\" value=\"\" /></td>"
+					+ "<td><input class=\"easyui-numberbox\" name=\"properties["+ rowIndex +"].orderNo\" data-options=\"value:"+ (rowIndex + 1) +",min:1,precision:0,width:50\" /></td>"
+					+ "<td></td>"
+					+ "</tr>";
+			$("#prop-table").append(rowCode);
+			$.parser.parse('#props-enable-state');
+			initControllers();
+			rowIndex++;
+		}
+
+
+		function removeProp(index){
+			$.messager.confirm('删除确认', '您确认要删除该行数据吗？', function(r){
+				if (r){
+					$("#props-" + index).fadeOut("slow", function(){
+						$("#props-" + index).remove();
+					})
+				}
+			});
+		}
+		
+		function removeParentProp(){
+			$("#props-parent").fadeOut("slow", function(){
+				$("#props-parent").remove();
+			})
+		}
+
+		function removeNameProp(){
+			$("#props-name").fadeOut("slow", function(){
+				$("#props-name").remove();
+			})
+		}
+
+		function removeEnableStateProp(){
+			$("#props-enable-state").fadeOut("slow", function(){
+				$("#props-enable-state").remove();
+			})
+		}
+		
+		function resetControllerIndex(){
+			var controlIndex = 0;
+			for (var i = 0; i < rowIndex; i++){
+				var controls = $("[name^='properties["+ i +"]']");
+				if (controls == null || controls.length == 0){
+					continue;
+				}
+
+				$.each(controls, function(k, n){
+					var name = $(n).attr("name");
+					name = name.replace(/\[\d\]/g, "["+ controlIndex +"]");
+					$(n).attr("name", name);
+				});
+				controlIndex++;
+			}
+			$.parser.parse("#prop-table");
+		}
+		
+		function treeStructureChanged(newValue, oldValue){
+			if (newValue == "1"){
+				var propNames = $("[name$='propName']");
+				var parentFlag = false;
+				var nameFlag = false;
+				for (var i = 0; i < propNames.length; i++){
+					if (propNames[i].value == "name"){
+						nameFlag = true;
+					} else if (propNames[i].value == "parent"){
+						parentFlag = true;
+					}
+				}
+				if (!nameFlag){
+					addNameProp();
+				}
+				if (!parentFlag){
+					addParentProp();					
+				} else {
+					$.messager.alert("提示信息", "无法添加parent属性，请删除或重命名已存在的parent属性。", "error");
+					$("#custom-entity-tree-structure").combobox('setValue', '0');
+					return;
+				}
+			} else {
+				removeParentProp();
+				removeNameProp();
+			}
+		}
+
+		function operationChanged(newValue, oldValue){
+			var operations = $("#custom-entity-operations").combobox('getValues');
+			var enableStateRow = $("#props-enable-state");
+			if (operations.indexOf("启用") != -1 || operations.indexOf("禁用") != -1){
+				//选择启用、禁用操作，如果state行不存在，则创建该行
+				if (enableStateRow == null || enableStateRow.length == 0){
+					addEnableStateProp();
+				}
+			} else {
+				if (enableStateRow != null && enableStateRow.length > 0){
+					removeEnableStateProp();
+				}
+			}
+		}
+	</script>
+</body>
+
+</html>

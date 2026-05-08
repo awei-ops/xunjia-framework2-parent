@@ -1,0 +1,86 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:bf="http://www.thymeleaf.org">
+
+
+<div class="table-container">
+  <div id='firstRadar' style='width:35%;height:450px;float: left;'></div>
+  <div id='secondRadar' style='width:65%;height:450px;float: left;'>
+    <div>
+      <a>节能措施：</a>
+      <select class="easyui-combobox" id="query-measures" data-options="
+                url:'/energySavingMeasures/getEnergySavingMeasuresByTypeCode?typeCode=jbjncs',
+                width: 240,
+                textField: 'classificationName',
+                valueField: 'classificationCode',
+                editable: false
+            ">
+      </select>
+      <a href="javascript:" onclick="searchPageDataForMeasures();" class="easyui-linkbutton"
+         iconCls="fa fa-search">查询</a>
+      <a href="javascript:" onclick="apply();" class="easyui-linkbutton"
+         iconCls="fa fa-search">应用</a>
+    </div>
+    <div style='margin-top:10px;'>
+      <table id="display-data-table-measures"></table>
+    </div>
+    <form id="edit-form" method="post">
+      <input type="hidden" id="measures-id" name="id" />
+      <input type="hidden" id="measures-originalDataDate" name="myDate" />
+      <input type="hidden" id="measures-measuresTypeCode" name="measuresTypeCode" value="zsbjncs"/>
+      <input type="hidden" id="measures-zid" name="zid" />
+      <input type="hidden" id="measures-zmc" name="zmc" />
+      <input type="hidden" id="measures-equipmentId" name="equipmentId" />
+      <input type="hidden" id="measures-equipmentName" name="equipmentName" />
+      <table class="edit-table">
+        <tr>
+          <th>节能措施建议：</th>
+          <td>
+            <input id="measures" class="easyui-textbox" data-options="multiline:true" name="measures" style="width:100%;height:200px">
+          </td>
+        </tr>
+      </table>
+    </form>
+  </div>
+</div>
+
+<script th:inline="none">
+  $(function(){
+      $("#display-data-table-measures").datagrid({
+          url: '/energySavingDetail/getByClassificationCode?measuresTypeCode=jbjncs&classificationCode=first',
+          fit: false,
+          idField: 'id',
+          fitColumns: true,
+          striped: true,
+          loadMsg: '数据加载中，请稍候...',
+          pagination: false,
+          pageSize: 20,
+          rownumbers: true,
+          columns:[[{field: 'id',checkbox: true,"width":80},{"field":"detail","title":"措施内容","width":80}]]
+      });
+    });
+
+    function searchPageDataForMeasures(){
+        var classificationCode = $('#query-measures').combobox('getValue');
+        var url="/energySavingDetail/getByClassificationCode?measuresTypeCode=jbjncs&classificationCode=" + classificationCode;
+        var op = $('#display-data-table-measures').datagrid('options');
+        op.url = url;
+        $('#display-data-table-measures').datagrid('reload');
+	}
+
+	function apply(){
+        var selectedRows = $("#display-data-table-measures").datagrid("getSelections");
+		if (selectedRows == null || selectedRows.length == 0){
+			$.messager.alert("提示信息", "您未选择要应用的措施。", "warning");
+		}else{
+            var measures ="";
+            for(var i=0;i< selectedRows.length;i++){
+                measures = measures + selectedRows[i].detail+ ";\r\n"
+            }
+            $("#measures").textbox('setValue', measures)
+		}
+	}
+
+</script>
+</html>

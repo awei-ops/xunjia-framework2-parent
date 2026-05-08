@@ -1,0 +1,34 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:bf="http://www.thymeleaf.org">
+	
+<div class="table-container">
+	<form id="edit-org-form" method="post">
+		<table class="edit-table">
+			<tr>
+				<th style="width:15%">模块名称：</th>
+				<td id="td_module"></td>
+				<th style="width:15%">操作描述：</th>
+				<td id="td_description"></td>
+			</tr>
+			<tr>
+				<th>操作人账号：</th>
+				<td id="td_username"></td>
+				<th>操作人姓名：</th>
+				<td id="td_realName"></td>
+			</tr>
+			<tr>
+				<th>操作人IP：</th>
+				<td id="td_ip"></td>
+				<th>操作时间：</th>
+				<td id="td_operateTime"></td>
+			</tr>
+			<tr>
+				<th>参数明细：</th>
+				<td id="td_params" colspan="3"></td>
+			</tr>
+		</table>
+	</form>
+</div>
+</html>

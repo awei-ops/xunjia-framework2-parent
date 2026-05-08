@@ -1,0 +1,58 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:bf="http://www.thymeleaf.org">
+
+
+<div class="table-container">
+  <form id="add-form" method="post">
+    <input type="hidden" id="monitoring-type" name="type" value="注水泵机组监测项目与指标要求"/>
+    <input type="hidden" id="monitoring-monitoringItemOne" name="monitoringItemOne" value="机组效率%（往复泵）"/>
+    <input type="hidden" id="monitoring-monitoringItemTwo" name="monitoringItemTwo" value="系统效率%（往复泵）"/>
+    <table class="edit-table">
+      <tr>
+        <th>机组效率%限定值：</th>
+        <td>
+          <input id="monitoring-monitoringItemOneLimit" name="monitoringItemOneLimit" class="easyui-numberbox" data-options="min:1,precision:2,required:true,width:240" />
+        </td>
+      </tr>
+      <tr>
+        <th>机组效率%节能评价值：</th>
+        <td>
+          <input id="monitoring-monitoringItemOneEnergy" name="monitoringItemOneEnergy" class="easyui-numberbox" data-options="min:1,precision:2,required:true,width:240" />
+        </td>
+      </tr>
+      <tr>
+        <th>机组效率小于限定时评价：</th>
+        <td>
+          <input id="monitoring-itemOneMinEvaluation" name="itemOneMinEvaluation" class="easyui-textbox" data-options="required:true,width:240" />
+        </td>
+      </tr>
+      <tr>
+        <th>机组效率大于等于限定、小于节能时评价：</th>
+        <td>
+          <input id="monitoring-itemOneMidEvaluation" name="itemOneMidEvaluation" class="easyui-textbox" data-options="required:true,width:240" />
+        </td>
+      </tr>
+      <tr>
+        <th>机组效率大于节能时评价：</th>
+        <td>
+          <input id="monitoring-itemOneMaxEvaluation" name="itemOneMaxEvaluation" class="easyui-textbox" data-options="required:true,width:240" />
+        </td>
+      </tr>
+      <tr>
+        <th>系统效率%限定值：</th>
+        <td>
+          <input id="monitoring-monitoringItemTwoLimit" name="monitoringItemTwoLimit" class="easyui-numberbox" data-options="min:1,precision:2,required:true,width:240" />
+        </td>
+      </tr>
+      <tr>
+        <th>系统效率%节能评价值：</th>
+        <td>
+          <input id="monitoring-monitoringItemTwoEnergy" name="monitoringItemTwoEnergy" class="easyui-numberbox" data-options="min:1,precision:2,required:true,width:240" />
+        </td>
+      </tr>
+    </table>
+  </form>
+</div>
+</html>

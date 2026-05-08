@@ -1,0 +1,219 @@
+﻿<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org">
+
+<head>
+	<div th:replace="framework/include/head::head"></div>
+	<script type="text/javascript" src="/global/js/echarts/echarts.min.js"></script>
+</head>
+
+<body>
+<div id="server-info">
+	<table id="portal-table">
+		<tr>
+			<td colspan="2">
+				<div class="easyui-panel" data-options="title: '服务器信息'">
+					<table class="edit-table" style="border:0px;">
+						<tr>
+							<th>服务器名称：</th>
+							<td th:text="${sysInfo.computerName}"></td>
+						</tr>
+						<tr>
+							<th>服务器IP：</th>
+							<td th:text="${sysInfo.computerIp}"></td>
+						</tr>
+						<tr>
+							<th>操作系统：</th>
+							<td th:text="${sysInfo.osName}"></td>
+						</tr>
+						<tr>
+							<th>操作系统架构：</th>
+							<td th:text="${sysInfo.osArch}"></td>
+						</tr>
+						<tr>
+							<th>应用程序目录：</th>
+							<td th:text="${sysInfo.userDir}"></td>
+						</tr>
+					</table>
+				</div>
+			</td>
+		</tr>
+		<tr>
+			<td style="width:35%;padding-top:10px;">
+				<div class="easyui-panel" data-options="title:'内存使用率'" style="width:100%;height:300px;overflow:hidden;">
+					<div id="mem-chart" style="width:99%;height:350px;margin-top:-20px;"></div>
+				</div>
+			</td>
+			<td style="width:65%;padding-top:10px;">
+				<div class="easyui-panel" data-options="title:'CPU使用率'" style="width:100%;height:300px;">
+					<div id="cpu-chart" style="width:99%;height:260px;"></div>
+				</div>
+			</td>
+		</tr>
+		<tr>
+			<td colspan="2" style="padding-top:10px;">
+				<div class="easyui-panel" data-options="title:'磁盘信息'" style="width:100%;">
+					<div id="disk-charts" style="width:100%;overflow:hidden;"></div>
+				</div>
+			</td>
+		</tr>
+	</table>
+	
+	
+</div>
+</body>
+<script th:inline="none">
+
+	$(function(){
+		var themeName = $("#theme-name", parent.document).val();
+		$("#theme-css-link").attr("href", "/global/js/super/"+ themeName +".css")
+	});
+
+	var cpuChart = echarts.init($("#cpu-chart")[0]);
+	var memChart = echarts.init($("#mem-chart")[0]);
+	var cpuTimeArray = [];
+	var sysDataArray = [];
+	var useDataArray = [];
+	var waitDataArray = [];
+	var freeDataArray = [];
+	
+	var cpuOption = {
+		tooltip : {
+			trigger : 'axis'
+		},
+		legend : {
+			data : [ '系统使用率', '用户使用率', '空闲率' ]
+		},
+		grid : {
+			left : '1%',
+			right : '1%',
+			bottom : '5%',
+			top: '5%',
+			containLabel : true
+		},
+		xAxis : {
+			type : 'category',
+			boundaryGap : false,
+			data : cpuTimeArray
+		},
+		yAxis : {
+			type : 'value'
+		},
+		series : [ {
+			name : '系统使用率',
+			type : 'line',
+			data : sysDataArray
+		}, {
+			name : '用户使用率',
+			type : 'line',
+			data : useDataArray
+		}, {
+			name : '空闲率',
+			type : 'line',
+			data : freeDataArray
+		} ]
+	};
+	
+	var memOption = {
+	    tooltip: {
+	        formatter: '{a} <br/>{b} : {c}%'
+	    },
+	    series: [
+	        {
+	            name: '内存使用率',
+	            type: 'gauge',
+	            detail: {formatter: '{value}%'},
+	            data: [{value: 0, name: 'RAM使用率'}]
+	        }
+	    ]
+	};
+	
+	$(function() {
+		setInterval("getCpuInfo();", 5000);
+		getCpuInfo();
+
+		setInterval("getMemInfo();", 15000);
+		getMemInfo();
+		
+		getDiskInfo();
+	});
+	
+	function getCpuInfo() {
+		$.get("/server/getCpuInfo", function(data) {
+			if (cpuTimeArray.length >= 15){
+				cpuTimeArray.shift();
+				sysDataArray.shift();
+				useDataArray.shift();
+				waitDataArray.shift();
+				freeDataArray.shift();
+			}
+			cpuTimeArray.push(data.time);
+			sysDataArray.push(data.cpu.sys);
+			useDataArray.push(data.cpu.used);
+			waitDataArray.push(data.cpu.wait);
+			freeDataArray.push(data.cpu.free);
+		});
+		cpuOption.series[0].data = sysDataArray;
+		cpuOption.series[1].data = useDataArray;
+		cpuOption.series[2].data = freeDataArray;
+		cpuChart.setOption(cpuOption);
+	}
+
+	function getMemInfo(){
+		$.get("/server/getMemeryInfo", function(data) {
+			var total = data.total;
+			var used = data.used;
+			var value = (used / total * 100).toFixed(2) - 0;
+			memOption.series[0].data[0].value = value;
+		    memChart.setOption(memOption, true);
+		});
+	}
+	
+	function getDiskInfo(){
+		$.get("/server/getDiskInfo", function(data){
+			var width = 30;
+			$.each(data, function(i, n){
+				$("#disk-charts").append("<div id='disk-chart-"+ i +"' style='width:30%; height:240px; float:left; margin-top: 20px; padding-right: 20px;'></div>");
+				initDiskChart("disk-chart-" + i);
+				var data = [{name: '已使用 ' + n.used, value: n.used.replace("GB", "")}, {name: '未使用 ' + n.free, value: n.free.replace("GB", "")}];
+				var series = [{
+		            name: n.typeName,
+		            type: 'pie',
+		            radius: '55%',
+		            center: ['50%', '60%'],
+		            data: data,
+		            emphasis: {
+		                itemStyle: {
+		                    shadowBlur: 10,
+		                    shadowOffsetX: 0,
+		                    shadowColor: 'rgba(0, 0, 0, 0.5)'
+		                }
+		            }
+		        }];
+				var title = [{
+					text: n.typeName + " " + n.total,
+					textStyle: {
+						fontSize: 12
+					},
+			        left: 'center'
+			    }];
+
+				initDiskChart("disk-chart-" + i, title, series);
+			});
+		});
+	}
+	
+	function initDiskChart(domId, title, series) {
+		var diskChart = echarts.init($("#" + domId)[0]);
+		option = {
+			    title: title,
+			    tooltip: {
+			        trigger: 'item',
+			        formatter: '{a} <br/>{b} : ({d}%)'
+			    },
+			    series: series
+			};
+		diskChart.setOption(option);
+	}
+</script>
+</html>

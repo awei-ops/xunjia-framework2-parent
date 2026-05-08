@@ -1,0 +1,100 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:bf="http://www.thymeleaf.org">
+	
+<head>
+	<div th:replace="framework/include/head::head"></div>
+</head>
+
+<body>
+	<div class="easyui-layout" fit="true">
+		<div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
+			<input id="log-start-date" class="easyui-datebox" data-options="width:240,editable:false,label:'起始日期：' ,labelAlign:'right',labelWidth:70" />
+			<input id="log-end-date" class="easyui-datebox" data-options="width:240,editable:false,label:'截止日期：' ,labelAlign:'right',labelWidth:70" />
+			<a href="javascript:" onclick="searchLoggingEvent();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+		</div>
+		<div data-options="region:'center'">
+			<table id="logging-event-table"></table>
+		</div>
+	</div>
+	<div id="log-detail-dialog" class="easyui-dialog" data-options="closed:true,title:'查看异常栈',modal:true,width:1000,height:660">
+		<table id="log-detail-table"></table>
+	</div>
+	
+	<script th:inline="none">
+	$(function(){
+		$("#logging-event-table").datagrid({
+			url: '/log/findLoggingEvent',
+			idField: 'eventId',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: true,
+			pageSize: 20,
+			rownumbers: true,
+			columns: [[
+				{
+					field: 'timestmp',
+					title: '事件时间',
+					width: 80,
+					formatter: function(value, row, index){
+						return new Date(value).format("yyyy-MM-dd HH:mm:ss");
+					}
+				}, {
+					field: 'levelString',
+					title: '事件级别',
+					width: 60
+				}, {
+					field: 'callerClass',
+					title: '异常发生类',
+				}, {
+					field: 'callerMethod',
+					title: '方法-代码行',
+					width: 80,
+					formatter: function(value, row, index){
+						return value + " - " + row.callerLine;
+					}
+				}, {
+					field: 'loggerName',
+					title: '记录器名称'
+				}
+			]],
+			onDblClickRow: function(index, data){
+				viewLoggingException(data.eventId);
+			}
+		});
+	});
+	
+	function searchLoggingEvent(){
+		var startDate = $("#log-start-date").datebox('getValue');
+		var endDate = $("#log-end-date").datebox('getValue');
+		$("#logging-event-table").datagrid('load', {
+			startDate: startDate,
+			endDate: endDate
+		});
+	}
+	
+	function viewLoggingException(eventId){
+		$("#log-detail-dialog").dialog("open");
+		$("#log-detail-table").datagrid({
+			url: '/log/findExceptionByEventId?eventId=' + eventId,
+			idField: 'eventId',
+			fit: true,
+			fitColumns: true,
+			striped: true,
+			loadMsg: '数据加载中，请稍候...',
+			pagination: false,
+			rownumbers: true,
+			columns: [[
+				{
+					field: 'traceLine',
+					title: '异常栈信息'
+				}
+			]]
+		});
+	}
+	</script>
+</body>
+</html>

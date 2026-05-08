@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: pes
+  profiles: 
+    active: prod
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 1024MB
+      max-request-size: 1024MB
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    cache: false
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+
+server:
+  servlet:
+    session:
+      cookie:
+        name: pes-data-sync
