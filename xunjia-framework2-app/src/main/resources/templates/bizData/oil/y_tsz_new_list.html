@@ -8,26 +8,54 @@
 
 <body>
 	<div class="easyui-layout" fit="true">
-		<div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
-			<a>站名称：</a>
-			<select class="easyui-combobox" id="query-stations" data-options="
-                url:'/dmgc_y_tsz_new/getAll',
-                width: 150,
-                textField: 'mc',
-                valueField: 'eventId',
-                editable: true,
-                loadFilter : function (data) {
-                  if (data) {
-                      data.splice(0, 0, {mc: '全部', eventId: ''});
-                  }
-                  return data;
-              },
-            ">
-			</select>
-			<a href="javascript:" onclick="searchPageData();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+		<div data-options="region:'north',height:53"
+			 style="padding:10px 8px 10px 8px;overflow:hidden;">
+
+			<a>标准井号：</a>
+			<input class="easyui-textbox" style="width:150px">
+
+			<a style="margin-left:20px;">通用井号：</a>
+			<input class="easyui-textbox" style="width:150px">
+
+			<a href="javascript:"
+			   class="easyui-linkbutton"
+			   iconCls="fa fa-search">
+				查询
+			</a>
+
 		</div>
 		<div data-options="region:'center'">
+
 			<table id="display-data-table"></table>
+
+			<div id="user-operation-bar" class="datagrid-toolbar">
+
+				<a href="javascript:"
+				   class="easyui-linkbutton"
+				   iconCls="fa fa-plus"
+				   style="background:#4fc3f7;color:white;border-color:#4fc3f7;"
+				   plain="false">
+					添加
+				</a>
+
+				<a href="javascript:"
+				   class="easyui-linkbutton"
+				   iconCls="fa fa-pencil"
+				   style="background:#4fc3f7;color:white;border-color:#4fc3f7;"
+				   plain="false">
+					修改
+				</a>
+
+				<a href="javascript:"
+				   class="easyui-linkbutton"
+				   iconCls="fa fa-remove"
+				   style="background:#ff7043;color:white;border-color:#ff7043;"
+				   plain="false">
+					删除
+				</a>
+
+			</div>
+
 		</div>
 	</div>
 
@@ -36,14 +64,55 @@
 			$("#display-data-table").datagrid({
 				url: '/dmgc_y_tsz_new/getPageData',
 				fit: true,
+				toolbar:'#user-operation-bar',
 				fitColumns: true,
 				striped: true,
 				loadMsg: '数据加载中，请稍候...',
 				pagination: true,
 				pageSize: 20,
 				rownumbers: true,
+				singleSelect:false,
+				checkOnSelect:true,
+				selectOnCheck:true,
 				columns: [[
-					{ "field": "mc", "title": "名称", "width": 110 },
+					{field:'ck',checkbox:true},
+					{ "field": "bzjh", "title": "标准井号", "width": 120 },
+
+					{ "field": "tyjh", "title": "通用井号", "width": 120 },
+
+					{ "field": "sfbfj", "title": "是否报废井", "width": 100 },
+
+					{ "field": "dwmc", "title": "单位名称", "width": 150 },
+
+					{ "field": "qkmc", "title": "区块名称", "width": 150 },
+
+					{ "field": "qtfs", "title": "驱替方式", "width": 100 },
+
+					{ "field": "ccfs", "title": "采出方式", "width": 100 },
+
+					{ "field": "jx", "title": "井型", "width": 80 },
+
+					{ "field": "jb", "title": "井别", "width": 80 },
+
+					{
+						"field": "kzrq",
+						"title": "开钻日期",
+						"width": 120,
+						formatter: dateFormatterToDay
+					},
+
+					{
+						"field": "tcrq",
+						"title": "投产日期",
+						"width": 120,
+						formatter: dateFormatterToDay
+					},
+
+					{ "field": "yqpz", "title": "油气品种", "width": 120 },
+
+					{ "field": "bfyy", "title": "报废原因", "width": 180 }
+
+/*					{ "field": "mc", "title": "名称", "width": 110 },
 					// { "field": "zlx", "title": "站类型", "width": 110 },
 					// { "field": "lylx", "title": "来液类型", "width": 110 },
 					// { "field": "gylc", "title": "工艺流程", "width": 110 },
@@ -87,7 +156,7 @@
 					// { "field": "sslhzEventId", "title": "所属联合站id", "width": 110 },
 					// { "field": "ssdwdm", "title": "所属单位代码", "width": 110 },
 					// { "field": "bz", "title": "备注", "width": 110 },
-					// { "field": "code", "title": "编码", "width": 110 }
+					// { "field": "code", "title": "编码", "width": 110 }*/
 				]]
 			});
 		});

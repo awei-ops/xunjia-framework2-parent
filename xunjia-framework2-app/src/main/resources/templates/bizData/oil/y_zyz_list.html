@@ -8,26 +8,52 @@
 
 <body>
 	<div class="easyui-layout" fit="true">
-		<div data-options="region:'north',height:53" style="padding:10px 8px 10px 8px;overflow:hidden;">
-			<a>站名称：</a>
-			<select class="easyui-combobox" id="query-stations" data-options="
-                url:'/dmgc_y_zyz/getAll',
-                width: 150,
-                textField: 'mc',
-                valueField: 'eventId',
-                editable: true,
-                loadFilter : function (data) {
-                  if (data) {
-                      data.splice(0, 0, {mc: '全部', eventId: ''});
-                  }
-                  return data;
-              },
-            ">
-			</select>
-			<a href="javascript:" onclick="searchPageData();" class="easyui-linkbutton" iconCls="fa fa-search">查询</a>
+		<div data-options="region:'north',height:53"
+			 style="padding:10px 8px 10px 8px;overflow:hidden;">
+
+			<a>名称：</a>
+			<input class="easyui-textbox" style="width:150px">
+
+			<a style="margin-left:20px;">站内编号：</a>
+			<input class="easyui-textbox" style="width:150px">
+
+			<a href="javascript:"
+			   class="easyui-linkbutton"
+			   iconCls="fa fa-search">
+				查询
+			</a>
+
 		</div>
 		<div data-options="region:'center'">
+
 			<table id="display-data-table"></table>
+
+			<div id="user-operation-bar" class="datagrid-toolbar">
+
+				<a href="javascript:"
+				   class="easyui-linkbutton"
+				   iconCls="fa fa-plus"
+				   style="background:#4fc3f7;color:white;border-color:#4fc3f7;"
+				   plain="false">
+					添加
+				</a>
+
+				<a href="javascript:"
+				   class="easyui-linkbutton"
+				   iconCls="fa fa-pencil"
+				   style="background:#4fc3f7;color:white;border-color:#4fc3f7;"
+				   plain="false">
+					修改
+				</a>
+
+				<a href="javascript:"
+				   class="easyui-linkbutton"
+				   iconCls="fa fa-remove"
+				   style="background:#ff7043;color:white;border-color:#ff7043;"
+				   plain="false">
+					删除
+				</a>
+			</div>
 		</div>
 	</div>
 
@@ -36,49 +62,76 @@
 			$("#display-data-table").datagrid({
 				url: '/dmgc_y_zyz/getPageData',
 				fit: true,
+				toolbar:'#user-operation-bar',
 				fitColumns: true,
 				striped: true,
 				loadMsg: '数据加载中，请稍候...',
 				pagination: true,
 				pageSize: 20,
 				rownumbers: true,
+				singleSelect:false,
+				checkOnSelect:true,
+				selectOnCheck:true,
 				columns: [[
-					{ "field": "mc", "title": "名称", "width": 110 },
-					// { "field": "ssdwdm", "title": "所属单位代码", "width": 110 },
-					// { "field": "zlx", "title": "站类型", "width": 110 },
-					// { "field": "jczt", "title": "集成状态", "width": 110 },
-					{ "field": "sslhzmc", "title": "所属联合站名称", "width": 110 },
-					{ "field": "symz", "title": "输液下游站", "width": 110 },
-					{ "field": "ssmz", "title": "输水下游站", "width": 110 },
-					{ "field": "sqmz", "title": "输气下游站", "width": 110 },
-					// { "field": "gylc", "title": "工艺流程", "width": 110 },
-					{ "field": "sylsjgm", "title": "输液量设计规模（m³/d)", "width": 130 },
-					{ "field": "cllsjgm", "title": "处理量设计规模（m³/d)", "width": 130 },
-					{ "field": "wsssfs", "title": "输水量设计规模（m³/d)", "width": 130 },
-					// { "field": "sjjzfzs", "title": "外输输送方式", "width": 110 },
-					// { "field": "gxjljs", "title": "设计进站阀组数", "width": 110 },
-					{ "field": "gxfzs", "title": "管辖计量站数", "width": 110 },
-					{ "field": "rllx", "title": "燃料类型", "width": 110 },
-					// { "field": "xffs", "title": "消防方式", "width": 110 },
-					// { "field": "cnfs", "title": "采暖方式", "width": 110 },
-					// { "field": "zjzmj", "title": "总建筑面积", "width": 110 },
-					// { "field": "ztjzjg", "title": "主体建筑结构", "width": 110 },
-					// { "field": "zdmj", "title": "占地面积", "width": 110 },
-					// { "field": "zjfh", "title": "装机负荷", "width": 110 },
-					{ "field": "rfh", "title": "热负荷（%）", "width": 110 },
-					// { "field": "zcdj", "title": "站场等级", "width": 110 },
-					{ "field": "tcrq", "title": "投产日期", "width": 80, formatter: dateFormatterToDay },
-					// { "field": "sfszh", "title": "是否数字化", "width": 110 },
-					// { "field": "sfwrzs", "title": "是否无人值守", "width": 110 },
-					// { "field": "ygrs", "title": "用工人数", "width": 110 },
-					{ "field": "sfbf", "title": "运行状态", "width": 80, formatter: stationRunStateFormatter },
-					{ "field": "bfrq", "title": "报废日期", "width": 80, formatter: dateFormatterToDay },
-					// { "field": "zbhj", "title": "周边环境", "width": 110 },
-					// { "field": "yp", "title": "油品", "width": 110 },
-					// { "field": "dlwz", "title": "地理位置", "width": 110 },
-					// { "field": "bz", "title": "备注", "width": 110 },
-					// { "field": "code", "title": "编码", "width": 110 },
-					// { "field": "sslhzid", "title": "所属联合站ID", "width": 110 }
+					{field:'ck',checkbox:true},
+					{ "field": "mc", "title": "名称", "width": 140 },
+
+					{ "field": "dwmc", "title": "单位名称", "width": 150 },
+
+					{ "field": "lx", "title": "类型", "width": 100 },
+
+					{ "field": "jglx", "title": "结构类型", "width": 120 },
+
+					{ "field": "qdlx", "title": "驱动类型", "width": 120 },
+
+					{ "field": "js", "title": "级数", "width": 80 },
+
+					{ "field": "znbh", "title": "站内编号", "width": 120 },
+
+					{ "field": "ysjxh", "title": "压缩机型号", "width": 150 },
+
+					{ "field": "ysjgl", "title": "压缩机功率KW", "width": 140 },
+
+					{ "field": "ysjedl", "title": "压缩机额定电流A", "width": 160 },
+
+					{ "field": "glys", "title": "压缩机功率因数", "width": 160 }
+
+					/*	{ "field": "mc", "title": "名称", "width": 110 },
+                        // { "field": "ssdwdm", "title": "所属单位代码", "width": 110 },
+                        // { "field": "zlx", "title": "站类型", "width": 110 },
+                        // { "field": "jczt", "title": "集成状态", "width": 110 },
+                        { "field": "sslhzmc", "title": "所属联合站名称", "width": 110 },
+                        { "field": "symz", "title": "输液下游站", "width": 110 },
+                        { "field": "ssmz", "title": "输水下游站", "width": 110 },
+                        { "field": "sqmz", "title": "输气下游站", "width": 110 },
+                        // { "field": "gylc", "title": "工艺流程", "width": 110 },
+                        { "field": "sylsjgm", "title": "输液量设计规模（m³/d)", "width": 130 },
+                        { "field": "cllsjgm", "title": "处理量设计规模（m³/d)", "width": 130 },
+                        { "field": "wsssfs", "title": "输水量设计规模（m³/d)", "width": 130 },
+                        // { "field": "sjjzfzs", "title": "外输输送方式", "width": 110 },
+                        // { "field": "gxjljs", "title": "设计进站阀组数", "width": 110 },
+                        { "field": "gxfzs", "title": "管辖计量站数", "width": 110 },
+                        { "field": "rllx", "title": "燃料类型", "width": 110 },
+                        // { "field": "xffs", "title": "消防方式", "width": 110 },
+                        // { "field": "cnfs", "title": "采暖方式", "width": 110 },
+                        // { "field": "zjzmj", "title": "总建筑面积", "width": 110 },
+                        // { "field": "ztjzjg", "title": "主体建筑结构", "width": 110 },
+                        // { "field": "zdmj", "title": "占地面积", "width": 110 },
+                        // { "field": "zjfh", "title": "装机负荷", "width": 110 },
+                        { "field": "rfh", "title": "热负荷（%）", "width": 110 },
+                        // { "field": "zcdj", "title": "站场等级", "width": 110 },
+                        { "field": "tcrq", "title": "投产日期", "width": 80, formatter: dateFormatterToDay },
+                        // { "field": "sfszh", "title": "是否数字化", "width": 110 },
+                        // { "field": "sfwrzs", "title": "是否无人值守", "width": 110 },
+                        // { "field": "ygrs", "title": "用工人数", "width": 110 },
+                        { "field": "sfbf", "title": "运行状态", "width": 80, formatter: stationRunStateFormatter },
+                        { "field": "bfrq", "title": "报废日期", "width": 80, formatter: dateFormatterToDay },
+                        // { "field": "zbhj", "title": "周边环境", "width": 110 },
+                        // { "field": "yp", "title": "油品", "width": 110 },
+                        // { "field": "dlwz", "title": "地理位置", "width": 110 },
+                        // { "field": "bz", "title": "备注", "width": 110 },
+                        // { "field": "code", "title": "编码", "width": 110 },
+                        // { "field": "sslhzid", "title": "所属联合站ID", "width": 110 }*/
 				]]
 			});
 		});
